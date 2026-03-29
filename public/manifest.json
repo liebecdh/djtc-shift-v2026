@@ -1,14 +1,14 @@
 {
   "short_name": "DJTC SHIFT",
-  "name": "DJTC SHIFT V2.02.01",
+  "name": "DJTC SHIFT",
   "icons": [
     {
-      "src": "[https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png](https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png)",
+      "src": "/icon.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "[https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png](https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png)",
+      "src": "/icon.png",
       "type": "image/png",
       "sizes": "512x512"
     }
