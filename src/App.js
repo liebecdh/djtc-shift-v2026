@@ -156,11 +156,15 @@ const GGUMDORI_URL =
 
 export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // 🚨 1. 로딩 화면과 달력 화면의 배경색을 자연스럽게 전환하는 로직
+  useEffect(() => {
+    document.body.style.backgroundColor = showSplash ? '#1a050a' : '#0a0c10';
+    document.body.style.transition = 'background-color 0.5s ease-in-out';
+  }, [showSplash]);
 
   useEffect(() => {
-    // 🚨 1. 전체 화면 하얀색 배경 완벽 차단 로직
-    document.body.style.backgroundColor = '#0a0c10';
-
     if (window.tailwind) {
       setIsTailwindLoaded(true);
       return;
@@ -174,14 +178,12 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isMinLoadingTimeDone, setIsMinLoadingTimeDone] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
   const [splashDotCount, setSplashDotCount] = useState(0);
   const [masterData, setMasterData] = useState({
     schedules: {},
     editPassword: '1234',
   });
   
-  // 🚨 2. 보안 인증 상태 (초기값: 미인증)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const [isEditing, setIsEditing] = useState(false);
@@ -311,7 +313,6 @@ export default function App() {
     };
   }, []);
 
-  // 🚨 3. 비밀번호 확인 로직 통합 및 철저한 열람 제한
   const connectServer = async (targetKey, inputPass, isAuto = false) => {
     const key = targetKey || familyKey.trim();
     const pass = inputPass || editPass;
@@ -337,24 +338,21 @@ export default function App() {
       (snap) => {
         if (snap.exists()) {
           const data = snap.data().content;
-          // 비밀번호가 맞을 때만 데이터를 화면에 그림 (열람 허용)
           if (data.editPassword === pass) {
             if (!data.schedules) data.schedules = {};
             setMasterData(data);
             setIsAuthenticated(true);
             if (!isAuto) showToast('🟢 접속 성공');
             if (!isAuto) setShowSettings(false);
-            // 다음 번 자동 로그인을 위해 폰에 저장
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, pass }));
           } else {
             if (!isAuto) showToast('🔴 비밀번호가 틀립니다');
             setIsAuthenticated(false);
             setShowSettings(true);
             localStorage.removeItem(STORAGE_KEY);
-            if (syncUnsub.current) syncUnsub.current(); // 연결 해제
+            if (syncUnsub.current) syncUnsub.current();
           }
         } else {
-          // 새로 생성할 때 (새 공유코드 & 비번)
           const newData = { schedules: {}, editPassword: pass };
           setMasterData(newData);
           setIsAuthenticated(true);
@@ -370,7 +368,6 @@ export default function App() {
     );
   };
 
-  // 🚨 4. 다음 접속 시 자동 로그인 실행 로직
   useEffect(() => {
     if (isAuthReady && user) {
       try {
@@ -378,10 +375,9 @@ export default function App() {
         if (saved && saved.key && saved.pass) {
           setFamilyKey(saved.key);
           setEditPass(saved.pass);
-          // 저장된 키와 비번으로 즉시 자동 접속
           connectServer(saved.key, saved.pass, true);
         } else {
-          setShowSettings(true); // 정보 없으면 설정창 먼저 띄움
+          setShowSettings(true); 
         }
       } catch (e) {
         setShowSettings(true);
@@ -749,11 +745,14 @@ export default function App() {
             </div>
           )}
         </div>
+        
+        {/* 🚨 2. 일정과 메모 공간 3단 분리 및 상단 밀착 구조 적용 */}
         <div
-          className="flex-1 w-full grid grid-rows-3 gap-0 px-0.5 pb-[4px]"
+          className="flex-1 w-full flex flex-col px-0.5 pb-[4px]"
           style={{ pointerEvents: 'none' }}
         >
-          <div className="w-full h-full flex items-start justify-center overflow-hidden">
+          {/* 첫 번째 단: 일정 */}
+          <div className="w-full h-[18px] flex items-start justify-center overflow-hidden shrink-0">
             {s.type === 'schedule' && s.text && (
               <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-cyan-900/40 text-cyan-400 border-[0.5px] border-cyan-500/30 truncate">
                 {s.text}
@@ -765,15 +764,20 @@ export default function App() {
               </div>
             )}
           </div>
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+          
+          {/* 두 번째 단: 여백 확보 (10px) */}
+          <div className="w-full h-[10px] shrink-0"></div>
+          
+          {/* 세 번째 단: 메모 (나머지 공간 모두 차지, 위쪽으로 바짝 밀착) */}
+          <div className="w-full flex-1 flex items-start justify-center overflow-hidden min-h-[20px]">
             {s.memo && (
               <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-indigo-500/20 border-[0.5px] border-indigo-400/30 text-indigo-300 truncate shadow-sm">
                 {s.memo}
               </div>
             )}
           </div>
-          <div className="w-full h-full flex items-end justify-center overflow-hidden"></div>
         </div>
+        
         {isToday && (
           <div
             className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#D4AF37] rounded-full shadow-[0_0_6px_rgba(212,175,55,0.8)]"
@@ -840,8 +844,8 @@ export default function App() {
     <>
       <style>
         {`
-          /* 🚨 브라우저 전체의 빈틈 없는 다크 톤 적용 */
-          body, html { background-color: #0a0c10 !important; overscroll-behavior-y: none; margin: 0; padding: 0; }
+          /* body에 고정되었던 색상 강제 지정 해제 (JS에서 제어함) */
+          body, html { overscroll-behavior-y: none; margin: 0; padding: 0; }
 
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -914,7 +918,7 @@ export default function App() {
             </div>
 
             <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">
-              V2.02.01
+              V2.02.02
             </p>
           </div>
         </div>
@@ -934,7 +938,7 @@ export default function App() {
             <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5">
               <ShieldCheck size={12} className="text-[#D4AF37]" />
               <span className="text-[10px] font-black tracking-widest uppercase text-white/80">
-                DJTC SHIFT V2.02.01
+                DJTC SHIFT V2.02.02
               </span>
             </div>
             <button
