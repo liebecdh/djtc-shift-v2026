@@ -155,16 +155,16 @@ const GGUMDORI_URL =
   'https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png';
 
 export default function App() {
-  // 🚨 Vercel 배포 시 CSS 100% 보장을 위한 강제 로딩 안전장치
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
 
   useEffect(() => {
-    // 이미 로딩된 경우 패스
+    // 🚨 1. 전체 화면 하얀색 배경 완벽 차단 로직
+    document.body.style.backgroundColor = '#0a0c10';
+
     if (window.tailwind) {
       setIsTailwindLoaded(true);
       return;
     }
-    // Tailwind CSS 스크립트를 직접 주입하고, 로딩이 완료될 때까지 기다림
     const script = document.createElement('script');
     script.src = 'https://cdn.tailwindcss.com';
     script.onload = () => setIsTailwindLoaded(true);
@@ -180,6 +180,10 @@ export default function App() {
     schedules: {},
     editPassword: '1234',
   });
+  
+  // 🚨 2. 보안 인증 상태 (초기값: 미인증)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [familyKey, setFamilyKey] = useState('');
   const [editPass, setEditPass] = useState('');
@@ -307,18 +311,17 @@ export default function App() {
     };
   }, []);
 
-  const connectServer = async (name, isAuto = false) => {
-    const target = name || familyKey.trim();
-    if (!target) {
-      if (!isAuto) showToast('🟡 공유코드 입력 필요');
-      return;
-    }
-    if (!user) {
-      if (!isAuto) showToast('🔴 서버 연결 준비중...');
-      return;
-    }
+  // 🚨 3. 비밀번호 확인 로직 통합 및 철저한 열람 제한
+  const connectServer = async (targetKey, inputPass, isAuto = false) => {
+    const key = targetKey || familyKey.trim();
+    const pass = inputPass || editPass;
+
+    if (!key) { if (!isAuto) showToast('🟡 공유코드 입력 필요'); return; }
+    if (!pass) { if (!isAuto) showToast('🟡 비밀번호 입력 필요'); return; }
+    if (!user) { if (!isAuto) showToast('🔴 서버 연결 준비중...'); return; }
+
     if (syncUnsub.current) syncUnsub.current();
-    localStorage.setItem(STORAGE_KEY, target);
+    
     const docRef = doc(
       db,
       'artifacts',
@@ -326,33 +329,62 @@ export default function App() {
       'public',
       'data',
       'userSchedules_v305',
-      target
+      key
     );
+
     syncUnsub.current = onSnapshot(
       docRef,
       (snap) => {
         if (snap.exists()) {
           const data = snap.data().content;
-          if (!data.schedules) data.schedules = {};
-          setMasterData(data);
-          if (!isAuto) showToast('🟢 데이터 연동 성공');
+          // 비밀번호가 맞을 때만 데이터를 화면에 그림 (열람 허용)
+          if (data.editPassword === pass) {
+            if (!data.schedules) data.schedules = {};
+            setMasterData(data);
+            setIsAuthenticated(true);
+            if (!isAuto) showToast('🟢 접속 성공');
+            if (!isAuto) setShowSettings(false);
+            // 다음 번 자동 로그인을 위해 폰에 저장
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, pass }));
+          } else {
+            if (!isAuto) showToast('🔴 비밀번호가 틀립니다');
+            setIsAuthenticated(false);
+            setShowSettings(true);
+            localStorage.removeItem(STORAGE_KEY);
+            if (syncUnsub.current) syncUnsub.current(); // 연결 해제
+          }
         } else {
-          if (!isAuto) showToast('🔴 새로 생성됨');
+          // 새로 생성할 때 (새 공유코드 & 비번)
+          const newData = { schedules: {}, editPassword: pass };
+          setMasterData(newData);
+          setIsAuthenticated(true);
+          if (!isAuto) showToast('🟢 새 달력 생성됨');
+          if (!isAuto) setShowSettings(false);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, pass }));
+          setDoc(docRef, { content: newData, updatedAt: new Date().toISOString() });
         }
       },
       (error) => {
         if (!isAuto) showToast('🔴 네트워크 확인 필요');
       }
     );
-    if (!isAuto) setShowSettings(false);
   };
 
+  // 🚨 4. 다음 접속 시 자동 로그인 실행 로직
   useEffect(() => {
     if (isAuthReady && user) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setFamilyKey(saved);
-        connectServer(saved, true);
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && saved.key && saved.pass) {
+          setFamilyKey(saved.key);
+          setEditPass(saved.pass);
+          // 저장된 키와 비번으로 즉시 자동 접속
+          connectServer(saved.key, saved.pass, true);
+        } else {
+          setShowSettings(true); // 정보 없으면 설정창 먼저 띄움
+        }
+      } catch (e) {
+        setShowSettings(true);
       }
     }
   }, [isAuthReady, user]);
@@ -776,14 +808,13 @@ export default function App() {
     return gridRows;
   };
 
-  // 🚨 Vercel 환경에서 CSS 로딩이 완료되기 전까지 보여주는 강제 대기 화면
   if (!isTailwindLoaded) {
     return (
       <div
         style={{
           width: '100vw',
           height: '100vh',
-          backgroundColor: '#1a050a',
+          backgroundColor: '#0a0c10',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -809,6 +840,9 @@ export default function App() {
     <>
       <style>
         {`
+          /* 🚨 브라우저 전체의 빈틈 없는 다크 톤 적용 */
+          body, html { background-color: #0a0c10 !important; overscroll-behavior-y: none; margin: 0; padding: 0; }
+
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
           
@@ -904,7 +938,9 @@ export default function App() {
               </span>
             </div>
             <button
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => {
+                if(isAuthenticated) setShowSettings(!showSettings);
+              }}
               className="p-2 text-white/80 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85] relative z-30"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
@@ -966,18 +1002,15 @@ export default function App() {
               <input
                 value={familyKey}
                 onChange={(e) => setFamilyKey(e.target.value)}
-                onBlur={(e) => {
-                  if (e.target.value) connectServer(e.target.value, true);
-                }}
                 placeholder="공유코드"
-                className="w-[65%] h-12 px-5 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none"
+                className="w-[65%] h-12 px-5 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none focus:border-[#60a5fa]/50 transition-colors"
               />
               <button
-                onClick={() => connectServer(null, false)}
-                className="w-[32%] h-12 border border-emerald-500/50 text-emerald-400 rounded-full font-black text-[12px] transition-transform active:scale-[0.92]"
+                onClick={() => connectServer(familyKey, editPass, false)}
+                className="w-[32%] h-12 border border-emerald-500/50 text-emerald-400 bg-emerald-500/10 rounded-full font-black text-[12px] transition-transform active:scale-[0.92]"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                연결/복구
+                연결/접속
               </button>
             </div>
             <div className="flex items-center justify-between gap-2.5">
@@ -987,7 +1020,7 @@ export default function App() {
                   value={editPass}
                   onChange={(e) => setEditPass(e.target.value)}
                   placeholder="비밀번호"
-                  className="w-full h-full px-5 pr-12 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none"
+                  className="w-full h-full px-5 pr-12 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none focus:border-[#60a5fa]/50 transition-colors"
                 />
                 {isEditing && (
                   <button
@@ -1001,25 +1034,23 @@ export default function App() {
               </div>
               <button
                 onClick={() => {
+                  if (!isAuthenticated) {
+                    showToast('🟡 먼저 연결/접속을 눌러주세요');
+                    return;
+                  }
                   if (isEditing) {
                     setIsEditing(false);
-                    setShowSettings(false);
-                    setShowPwdChange(false);
                     showToast('🟡 보호 모드 전환');
                   } else {
-                    if (editPass === masterData.editPassword) {
-                      setIsEditing(true);
-                      setShowSettings(false);
-                      showToast('🔴 편집 모드 켜짐');
-                    } else {
-                      showToast('🔴 비밀번호 오류');
-                    }
+                    setIsEditing(true);
+                    setShowSettings(false);
+                    showToast('🔴 편집 모드 켜짐');
                   }
                 }}
-                className="w-[32%] h-12 rounded-full font-black text-[12px] bg-transparent border border-rose-500/50 text-rose-400 flex justify-center items-center gap-1.5 transition-transform active:scale-[0.92]"
+                className={`w-[32%] h-12 rounded-full font-black text-[12px] bg-transparent border flex justify-center items-center gap-1.5 transition-transform active:scale-[0.92] ${isEditing ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-rose-500/50 text-rose-400 bg-rose-500/10'}`}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                {isEditing ? '보호모드' : '편집해제'}
+                {isEditing ? '보호모드' : '편집모드'}
               </button>
             </div>
             {isEditing && showPwdChange && (
@@ -1052,6 +1083,10 @@ export default function App() {
                         updatedAt: new Date().toISOString(),
                       });
                     }
+                    // 비번 변경 시 자동 로그인 내역도 갱신
+                    setEditPass(newPass);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: newPass }));
+                    
                     setNewPass('');
                     setShowPwdChange(false);
                     showToast('🟢 비밀번호 변경 완료');
@@ -1066,6 +1101,7 @@ export default function App() {
           </div>
         </div>
 
+        {/* 🚨 달력 본문 영역 (잠금 기능 포함) */}
         <div
           className={`flex-1 px-4 flex flex-col overflow-hidden mt-4 relative ${
             isEditing ? 'pb-[68px]' : 'pb-4'
@@ -1112,10 +1148,18 @@ export default function App() {
             ))}
           </div>
           <div
-            className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10`}
+            className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500 ${!isAuthenticated ? 'blur-[6px] opacity-30 pointer-events-none' : ''}`}
           >
             {renderDaysGrid()}
           </div>
+          
+          {/* 비인증 상태일 때 표시되는 고급스러운 자물쇠 화면 */}
+          {!isAuthenticated && (
+             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0c10]/30 backdrop-blur-[2px]">
+               <ShieldCheck size={50} className="text-white/40 mb-3 drop-shadow-md" />
+               <span className="text-white/80 font-black tracking-widest text-[13px] bg-black/60 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">보안 잠금 상태입니다</span>
+             </div>
+          )}
         </div>
 
         {/* --- 툴바 영역 --- */}
@@ -1354,7 +1398,7 @@ export default function App() {
                   onClick={async () => {
                     if (!familyKey) return showToast('🟡 공유코드 입력 필요');
                     if (!user) return showToast('🔴 서버 연결 준비중');
-                    localStorage.setItem(STORAGE_KEY, familyKey.trim());
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: editPass }));
                     try {
                       const docRef = doc(
                         db,
