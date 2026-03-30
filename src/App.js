@@ -158,13 +158,13 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 로딩 화면과 달력 화면의 배경색 + 상태표시줄(배터리/시간) 테마 동기화
+  // 🚨 1. 로딩 화면과 달력 화면의 배경색 + iOS/안드로이드 상태표시줄 강제 설정 로직
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
     document.body.style.transition = 'background-color 0.5s ease-in-out';
     
-    // 스마트폰 상단 상태표시줄 색상을 동적으로 변경하는 메타 태그 로직
+    // 스마트폰 상단 상태표시줄 색상을 동적으로 변경하는 메타 태그
     let metaThemeColor = document.querySelector("meta[name=theme-color]");
     if (!metaThemeColor) {
       metaThemeColor = document.createElement("meta");
@@ -172,6 +172,23 @@ export default function App() {
       document.head.appendChild(metaThemeColor);
     }
     metaThemeColor.setAttribute("content", bgColor);
+
+    // iOS 전용 투명 상태표시줄 허용 태그 (배경색이 스며들게 함)
+    let metaAppleCapable = document.querySelector("meta[name=apple-mobile-web-app-capable]");
+    if (!metaAppleCapable) {
+      metaAppleCapable = document.createElement("meta");
+      metaAppleCapable.name = "apple-mobile-web-app-capable";
+      metaAppleCapable.content = "yes";
+      document.head.appendChild(metaAppleCapable);
+    }
+
+    let metaAppleStatus = document.querySelector("meta[name=apple-mobile-web-app-status-bar-style]");
+    if (!metaAppleStatus) {
+      metaAppleStatus = document.createElement("meta");
+      metaAppleStatus.name = "apple-mobile-web-app-status-bar-style";
+      metaAppleStatus.content = "black-translucent"; // 상태표시줄을 투명하게 덮어버림
+      document.head.appendChild(metaAppleStatus);
+    }
   }, [showSplash]);
 
   useEffect(() => {
@@ -230,6 +247,7 @@ export default function App() {
 
   const buttonRefs = useRef({});
   const prevIndRef = useRef({ left: 0, width: 0 });
+  const toolbarScrollRef = useRef(null); // 🚨 툴바 스크롤 제어용 Ref 추가
 
   const [indicatorStyle, setIndicatorStyle] = useState({
     left: 0,
@@ -854,8 +872,8 @@ export default function App() {
     <>
       <style>
         {`
-          /* body에 고정되었던 색상 강제 지정 해제 (JS에서 제어함) */
-          body, html { overscroll-behavior-y: none; margin: 0; padding: 0; }
+          /* 🚨 브라우저 전역 스와이프 제스처 차단 (뒤로가기 방지) */
+          body, html { overscroll-behavior: none; margin: 0; padding: 0; }
 
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -1270,10 +1288,14 @@ export default function App() {
               <div className="w-full flex items-end gap-3 pointer-events-none relative">
                 <div className="flex-1 relative flex flex-col min-w-0 pointer-events-auto">
                   <div className="w-full h-[64px] bg-[#1a1c23]/70 backdrop-blur-xl frost-border rounded-[2.5rem] flex items-center relative overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
-                    {/* 🚨 2. 툴바 스와이프 방지 처리 (overscrollBehaviorX 추가) */}
+                    {/* 🚨 2. 툴바 스와이프 제스처 완전 차단: onTouch 시리즈에 stopPropagation 적용 */}
                     <div
+                      ref={toolbarScrollRef}
                       className="flex-1 flex items-center h-full overflow-x-auto no-scrollbar relative px-2 gap-3"
                       style={{ touchAction: 'pan-x', overscrollBehaviorX: 'none', WebkitOverscrollBehaviorX: 'none' }}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
                     >
                       <div
                         className="absolute top-1/2 z-0"
