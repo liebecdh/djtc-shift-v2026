@@ -158,10 +158,20 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 로딩 화면과 달력 화면의 배경색을 자연스럽게 전환하는 로직
+  // 🚨 1. 로딩 화면과 달력 화면의 배경색 + 상태표시줄(배터리/시간) 테마 동기화
   useEffect(() => {
-    document.body.style.backgroundColor = showSplash ? '#1a050a' : '#0a0c10';
+    const bgColor = showSplash ? '#1a050a' : '#0a0c10';
+    document.body.style.backgroundColor = bgColor;
     document.body.style.transition = 'background-color 0.5s ease-in-out';
+    
+    // 스마트폰 상단 상태표시줄 색상을 동적으로 변경하는 메타 태그 로직
+    let metaThemeColor = document.querySelector("meta[name=theme-color]");
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement("meta");
+      metaThemeColor.name = "theme-color";
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.setAttribute("content", bgColor);
   }, [showSplash]);
 
   useEffect(() => {
@@ -746,7 +756,7 @@ export default function App() {
           )}
         </div>
         
-        {/* 🚨 2. 일정과 메모 공간 3단 분리 및 상단 밀착 구조 적용 */}
+        {/* 🚨 2. 일정과 메모 공간 3단 분리 및 상단 밀착 구조 (유지됨) */}
         <div
           className="flex-1 w-full flex flex-col px-0.5 pb-[4px]"
           style={{ pointerEvents: 'none' }}
@@ -1105,7 +1115,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* 🚨 달력 본문 영역 (잠금 기능 포함) */}
+        {/* 달력 본문 영역 (잠금 기능 포함) */}
         <div
           className={`flex-1 px-4 flex flex-col overflow-hidden mt-4 relative ${
             isEditing ? 'pb-[68px]' : 'pb-4'
@@ -1260,9 +1270,10 @@ export default function App() {
               <div className="w-full flex items-end gap-3 pointer-events-none relative">
                 <div className="flex-1 relative flex flex-col min-w-0 pointer-events-auto">
                   <div className="w-full h-[64px] bg-[#1a1c23]/70 backdrop-blur-xl frost-border rounded-[2.5rem] flex items-center relative overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+                    {/* 🚨 2. 툴바 스와이프 방지 처리 (overscrollBehaviorX 추가) */}
                     <div
                       className="flex-1 flex items-center h-full overflow-x-auto no-scrollbar relative px-2 gap-3"
-                      style={{ touchAction: 'pan-x' }}
+                      style={{ touchAction: 'pan-x', overscrollBehaviorX: 'none', WebkitOverscrollBehaviorX: 'none' }}
                     >
                       <div
                         className="absolute top-1/2 z-0"
