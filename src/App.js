@@ -9,8 +9,6 @@ import {
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import {
   Save,
-  MapPin,
-  Clock,
   X,
   ShieldCheck,
   RotateCcw,
@@ -157,7 +155,6 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 로딩 화면 상단 상태표시줄 색상 처리 (로딩 시 #1a050a, 완료 시 #0a0c10)
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
@@ -253,15 +250,7 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          try {
-             await signInWithCustomToken(auth, __initial_auth_token);
-          } catch (tokenError) {
-             console.warn("Token auth failed, falling back to anonymous auth");
-             await signInAnonymously(auth);
-          }
-        } 
-        else { await signInAnonymously(auth); }
+        await signInAnonymously(auth);
       } catch (e) {
         console.error("Auth error:", e);
       }
@@ -472,9 +461,14 @@ export default function App() {
     return (
       <div key={`${monthType}-${d}`} onClick={() => {
           if (isEditing) {
-            if (showShiftMenu || showNightMenu) { setShowShiftMenu(false); setShowNightMenu(false); }
+            if (drawMode !== 'shift' && showShiftMenu) setShowShiftMenu(false);
+            if (drawMode !== 'night' && showNightMenu) setShowNightMenu(false);
+
             if (!drawMode) return; 
-            if (drawMode === 'shift') { setSelectedDayKey(key); return; }
+            if (drawMode === 'shift') { 
+              setSelectedDayKey(prev => prev === key ? null : key); 
+              return; 
+            }
             if (drawMode === 'memo') { setModalState({ isOpen: true, type: 'memo', dateKey: key, data: { text: s.memo || '' } }); return; }
             if (drawMode === 'erase') { saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if (newData.schedules[key]?.memo) delete newData.schedules[key].memo; setMasterData(newData); } 
             else if (['day', 'night', 'night_duty', 'off', 'holiday', 'schedule'].includes(drawMode)) { 
@@ -544,7 +538,6 @@ export default function App() {
       
       {toast && (<div className="fixed top-12 left-1/2 -translate-x-1/2 z-[99999] animate-in slide-in-from-top-2 fade-in duration-200" style={{ pointerEvents: 'none' }}><div className="bg-[#1c1c1e]/70 backdrop-blur-xl frost-border px-4 py-2.5 rounded-full flex items-center justify-center min-w-[140px]"><span className="text-white text-[13px] font-black tracking-wide">{toast}</span></div></div>)}
       
-      {/* 🚨 순정 스플래시 화면 복구 (축구 엠블럼 삭제, 꿈돌이 유지) */}
       {showSplash && (
         <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ background: 'linear-gradient(135deg, #1a050a 0%, #4a161c 100%)', pointerEvents: 'none' }} >
           <div className="relative z-10 flex flex-col items-center w-full px-6">
@@ -558,7 +551,7 @@ export default function App() {
                 CONNECTING<span className="absolute left-full top-0 w-[24px] text-left">{".".repeat(splashDotCount)}</span>
               </span>
             </div>
-            <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">V2.02.02</p>
+            <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">V2.02.03</p>
           </div>
         </div>
       )}
@@ -566,7 +559,7 @@ export default function App() {
       <div className="max-w-[500px] mx-auto min-h-screen flex flex-col relative shadow-2xl font-sans overflow-hidden" style={{ backgroundColor: '#0a0c10' }}>
         <header className="pt-3 pb-3 px-5 rounded-b-[2rem] shadow-xl z-20 relative border-b border-[#D4AF37]/20" style={{ background: 'linear-gradient(145deg, #4a161c 0%, #1a050a 100%)' }}>
           <div className="flex justify-between items-center mb-3 mt-2">
-            <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#D4AF37]" /><span className="text-[10px] font-black tracking-widest uppercase text-white/80">DJTC SHIFT V2.02.02</span></div>
+            <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#D4AF37]" /><span className="text-[10px] font-black tracking-widest uppercase text-white/80">DJTC SHIFT V2.02.03</span></div>
             <button onClick={() => { if(isAuthenticated) setShowSettings(!showSettings); }} className="p-2 text-white/80 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85] relative z-30" style={{ WebkitTapHighlightColor: 'transparent' }}><Settings size={20}/></button>
           </div>
           <div className="flex justify-between items-center mb-1 px-2 relative z-30">
@@ -602,13 +595,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* 달력을 끝까지 스크롤 시 마지막 주가 툴바에 가려지지 않게 넉넉한 하단 여백 부여 (isEditing 상태 고려) */}
         <div className={`flex-1 px-4 flex flex-col overflow-hidden mt-4 relative`} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} >
           <div className="flex justify-between items-center px-5 py-3 mx-1 mb-4 bg-white/5 backdrop-blur-md frost-border rounded-full relative z-10"><span className="text-[12px] font-black text-white/60 tracking-widest">{currentDate.getMonth()+1}월 근무</span><div className="flex gap-3"><div className="flex items-center gap-1"><Sun size={14} className="text-yellow-500"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.day}</span></div><div className="flex items-center gap-1"><Moon size={14} className="text-indigo-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.night}</span></div><div className="flex items-center gap-1 pl-1 border-l border-white/10"><Bell size={14} className="text-violet-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.duty}</span></div></div></div>
           <div className="grid grid-cols-7 text-center py-2 text-[10px] font-black text-slate-500 mb-1 uppercase tracking-[0.2em] border-b border-white/5 relative z-10">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w,i)=><span key={w} className={i===0?'text-[#e55a5a]':i===6?'text-[#5a8be5]':''}>{w}</span>)}</div>
           <div 
             className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500 ${!isAuthenticated ? 'blur-[6px] opacity-30 pointer-events-none' : ''}`}
-            style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px' }}
+            style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px', WebkitOverflowScrolling: 'touch' }}
           >
             {renderDaysGrid()}
           </div>
@@ -693,7 +685,15 @@ export default function App() {
                 <button onClick={async () => { 
                   if(!familyKey) return showToast("🟡 공유코드 입력 필요"); if(!user) return showToast("🔴 서버 연결 준비중");
                   localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: editPass }));
-                  try { const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', familyKey.trim()); await setDoc(docRef, { content: masterData, updatedAt: new Date().toISOString() }); setDrawMode(null); setShowShiftMenu(false); setShowNightMenu(false); showToast("🟢 서버 저장 완료"); } 
+                  try { 
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', familyKey.trim()); 
+                    await setDoc(docRef, { content: masterData, updatedAt: new Date().toISOString() }); 
+                    setDrawMode(null); 
+                    setShowShiftMenu(false); 
+                    setShowNightMenu(false); 
+                    setSelectedDayKey(null);
+                    showToast("🟢 서버 저장 완료"); 
+                  } 
                   catch (e) { showToast("🔴 서버 저장 실패"); }
                 }} className="w-[64px] h-[64px] shrink-0 rounded-full bg-gradient-to-br from-[#4a161c] to-[#2a0b10] border border-[#D4AF37]/40 shadow-[0_0_20px_rgba(212,175,55,0.25)] flex flex-col items-center justify-center gap-1 pointer-events-auto transition-transform active:scale-[0.85] select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
                   <Save size={20} className="text-[#D4AF37]"/><span className="text-[10px] font-black tracking-wider text-[#D4AF37]">SAVE</span>
