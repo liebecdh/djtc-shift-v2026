@@ -157,33 +157,15 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
+  // 배경색 및 상태표시줄 동기화 유지
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
     document.body.style.transition = 'background-color 0.5s ease-in-out';
     
     let metaThemeColor = document.querySelector("meta[name=theme-color]");
-    if (!metaThemeColor) {
-      metaThemeColor = document.createElement("meta");
-      metaThemeColor.name = "theme-color";
-      document.head.appendChild(metaThemeColor);
-    }
-    metaThemeColor.setAttribute("content", bgColor);
-
-    let metaAppleCapable = document.querySelector("meta[name=apple-mobile-web-app-capable]");
-    if (!metaAppleCapable) {
-      metaAppleCapable = document.createElement("meta");
-      metaAppleCapable.name = "apple-mobile-web-app-capable";
-      metaAppleCapable.content = "yes";
-      document.head.appendChild(metaAppleCapable);
-    }
-
-    let metaAppleStatus = document.querySelector("meta[name=apple-mobile-web-app-status-bar-style]");
-    if (!metaAppleStatus) {
-      metaAppleStatus = document.createElement("meta");
-      metaAppleStatus.name = "apple-mobile-web-app-status-bar-style";
-      metaAppleStatus.content = "black-translucent"; 
-      document.head.appendChild(metaAppleStatus);
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", bgColor);
     }
   }, [showSplash]);
 
@@ -1165,7 +1147,6 @@ export default function App() {
           )}
         </div>
 
-        {/* --- 툴바 영역 (🚨 안전 영역 추가되어 홈 바와 겹치지 않음) --- */}
         {isEditing && (
           <>
             {!viewModal.isOpen &&
@@ -1272,6 +1253,9 @@ export default function App() {
                       ref={toolbarScrollRef}
                       className="flex-1 flex items-center h-full overflow-x-auto no-scrollbar relative px-2 gap-3"
                       style={{ touchAction: 'pan-x', overscrollBehaviorX: 'none', WebkitOverscrollBehaviorX: 'none' }}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
                     >
                       <div
                         className="absolute top-1/2 z-0"
