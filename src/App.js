@@ -9,6 +9,8 @@ import {
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import {
   Save,
+  MapPin,
+  Clock,
   X,
   ShieldCheck,
   RotateCcw,
@@ -155,6 +157,7 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
+  // 🚨 1. 상단 색상 동기화
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
@@ -250,7 +253,15 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        await signInAnonymously(auth);
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          try {
+             await signInWithCustomToken(auth, __initial_auth_token);
+          } catch (tokenError) {
+             console.warn("Token auth failed, falling back to anonymous auth");
+             await signInAnonymously(auth);
+          }
+        } 
+        else { await signInAnonymously(auth); }
       } catch (e) {
         console.error("Auth error:", e);
       }
@@ -461,11 +472,13 @@ export default function App() {
     return (
       <div key={`${monthType}-${d}`} onClick={() => {
           if (isEditing) {
+            // 🚨 3. SHIFT 모드일 때는 날짜를 눌러도 툴바가 안 닫히게 수정
             if (drawMode !== 'shift' && showShiftMenu) setShowShiftMenu(false);
             if (drawMode !== 'night' && showNightMenu) setShowNightMenu(false);
 
             if (!drawMode) return; 
             if (drawMode === 'shift') { 
+              // 🚨 3. 이미 선택된 날짜를 한 번 더 누르면 선택 해제 (토글 방식)
               setSelectedDayKey(prev => prev === key ? null : key); 
               return; 
             }
@@ -486,7 +499,6 @@ export default function App() {
           {s.type && <div className={`${maps[s.type]?.tc} drop-shadow-sm scale-[0.85]`}>{maps[s.type]?.i}</div>}
         </div>
         
-        {/* 🚨 일정, 10px 여백, 메모 3단 구조 */}
         <div className="flex-1 w-full flex flex-col px-0.5 pb-[4px]" style={{ pointerEvents: 'none' }}>
           <div className="w-full h-[18px] flex items-start justify-center overflow-hidden shrink-0">
             {s.type === 'schedule' && s.text && <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-cyan-900/40 text-cyan-400 border-[0.5px] border-cyan-500/30 truncate">{s.text}</div>}
@@ -523,7 +535,8 @@ export default function App() {
     <>
       <style>
         {`
-          body, html { overscroll-behavior: none; margin: 0; padding: 0; }
+          /* 🚨 2. 스크롤 뻑뻑함을 풀기 위해 앱 전체의 overscroll-behavior: none 족쇄 제거 */
+          body, html { margin: 0; padding: 0; background-color: #0a0c10; }
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
           @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
@@ -539,7 +552,8 @@ export default function App() {
       {toast && (<div className="fixed top-12 left-1/2 -translate-x-1/2 z-[99999] animate-in slide-in-from-top-2 fade-in duration-200" style={{ pointerEvents: 'none' }}><div className="bg-[#1c1c1e]/70 backdrop-blur-xl frost-border px-4 py-2.5 rounded-full flex items-center justify-center min-w-[140px]"><span className="text-white text-[13px] font-black tracking-wide">{toast}</span></div></div>)}
       
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ background: 'linear-gradient(135deg, #1a050a 0%, #4a161c 100%)', pointerEvents: 'none' }} >
+        // 🚨 1. 로딩 화면 그라데이션 수정 (사선->수직) 및 상단 색상(15% 영역) 완벽 고정
+        <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ background: 'linear-gradient(to bottom, #1a050a 0%, #1a050a 15%, #4a161c 100%)', pointerEvents: 'none' }} >
           <div className="relative z-10 flex flex-col items-center w-full px-6">
             <div className="relative w-60 h-60 animate-floating -mb-10">
               <div className="absolute inset-0 bg-[#D4AF37] blur-[50px] opacity-15 rounded-full"></div>
@@ -600,7 +614,7 @@ export default function App() {
           <div className="grid grid-cols-7 text-center py-2 text-[10px] font-black text-slate-500 mb-1 uppercase tracking-[0.2em] border-b border-white/5 relative z-10">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w,i)=><span key={w} className={i===0?'text-[#e55a5a]':i===6?'text-[#5a8be5]':''}>{w}</span>)}</div>
           <div 
             className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500 ${!isAuthenticated ? 'blur-[6px] opacity-30 pointer-events-none' : ''}`}
-            style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px', WebkitOverflowScrolling: 'touch' }}
+            style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px' }}
           >
             {renderDaysGrid()}
           </div>
@@ -613,7 +627,6 @@ export default function App() {
           )}
         </div>
 
-        {/* --- 툴바 영역 --- */}
         {isEditing && (
           <>
             {(!viewModal.isOpen && !modalState.isOpen && !showShiftMenu && !showNightMenu && (scheduleHistory.length > 0 || redoHistory.length > 0)) && (
@@ -691,6 +704,7 @@ export default function App() {
                     setDrawMode(null); 
                     setShowShiftMenu(false); 
                     setShowNightMenu(false); 
+                    // 🚨 3. 서버 저장 시 선택되어 있던 날짜도 깔끔하게 해제
                     setSelectedDayKey(null);
                     showToast("🟢 서버 저장 완료"); 
                   } 
