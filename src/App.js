@@ -1,102 +1,113 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  signInWithCustomToken,
+} from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { 
-  Save, Trophy, MapPin, Clock, X, ShieldCheck, 
-  RotateCcw, RefreshCw, ChevronLeft, ChevronRight, Settings,
-  Calendar, FileText, Brush, Sun, Moon, Home, Coffee, Trash2, Key, Bell
+import {
+  Save,
+  MapPin,
+  Clock,
+  X,
+  ShieldCheck,
+  RotateCcw,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  Calendar,
+  FileText,
+  Brush,
+  Sun,
+  Moon,
+  Home,
+  Coffee,
+  Trash2,
+  Key,
+  Bell,
 } from 'lucide-react';
 
 // [🚨 중요] 본인의 Firebase 설정값
 const firebaseConfig = {
-  apiKey: "AIzaSyBKuKbTyQJwEwfsnMQni2X7hiZnS09oiF4",
-  authDomain: "dhfc-shift.firebaseapp.com",
-  projectId: "dhfc-shift",
-  storageBucket: "dhfc-shift.firebasestorage.app",
-  messagingSenderId: "182895450339",
-  appId: "1:182895450339:web:5e5b03916e7233fdbf0dd6"
+  apiKey: 'AIzaSyBKuKbTyQJwEwfsnMQni2X7hiZnS09oiF4',
+  authDomain: 'dhfc-shift.firebaseapp.com',
+  projectId: 'dhfc-shift',
+  storageBucket: 'dhfc-shift.firebasestorage.app',
+  messagingSenderId: '182895450339',
+  appId: '1:182895450339:web:5e5b03916e7233fdbf0dd6',
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'daejeon-shift-pro-test-sandbox';
+const appId =
+  typeof __app_id !== 'undefined' ? __app_id : 'daejeon-shift-pro-test-sandbox';
 const STORAGE_KEY = 'TEST_SANDBOX_USER_V308_04';
 
-const MASTER_MATCH_SCHEDULE = {
-  "2026-3-2": { title: "1R", opponent: "안양", match: "대전 vs 안양", time: "14:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-3-7": { title: "2R", opponent: "부천", match: "부천 vs 대전", time: "16:30", venue: "부천종합(원정)", type: "A" },
-  "2026-3-14": { title: "3R", opponent: "김천", match: "대전 vs 김천", time: "16:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-3-18": { title: "4R", opponent: "인천", match: "인천 vs 대전", time: "19:30", venue: "인천전용(원정)", type: "A" },
-  "2026-3-21": { title: "5R", opponent: "전북", match: "대전 vs 전북", time: "14:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-4-4": { title: "6R", opponent: "포항", match: "포항 vs 대전", time: "16:30", venue: "포항스틸야드(원정)", type: "A" },
-  "2026-4-12": { title: "7R", opponent: "강원", match: "대전 vs 강원", time: "14:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-4-18": { title: "8R", opponent: "서울", match: "서울 vs 대전", time: "14:00", venue: "서울월드컵(원정)", type: "A" },
-  "2026-4-22": { title: "9R", opponent: "대전 vs 제주", match: "대전 vs 제주", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-4-26": { title: "10R", opponent: "울산", match: "울산 vs 대전", time: "16:30", venue: "울산문수(원정)", type: "A" },
-  "2026-5-2": { title: "11R", opponent: "광주", match: "광주 vs 대전", time: "19:00", venue: "광주전용(원정)", type: "A" },
-  "2026-5-5": { title: "12R", opponent: "인천", match: "대전 vs 인천", time: "16:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-5-9": { title: "13R", opponent: "포항", match: "대전 vs 포항", time: "19:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-5-12": { title: "14R", opponent: "강원", match: "강원 vs 대전", time: "19:30", venue: "강원원정", type: "A" },
-  "2026-5-16": { title: "15R", opponent: "서울", match: "대전 vs 서울", time: "16:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-7-4": { title: "16R", opponent: "부천", match: "대전 vs 부천", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-7-12": { title: "17R", opponent: "제주", match: "제주 vs 대전", time: "19:30", venue: "제주월드컵(원정)", type: "A" },
-  "2026-7-18": { title: "18R", opponent: "울산", match: "대전 vs 울산", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-7-21": { title: "19R", opponent: "전북", match: "전북 vs 대전", time: "19:30", venue: "전주월드컵(원정)", type: "A" },
-  "2026-7-25": { title: "20R", opponent: "김천", match: "김천 vs 대전", time: "19:30", venue: "김천종합(원정)", type: "A" },
-  "2026-8-2": { title: "21R", opponent: "광주", match: "대전 vs 광주", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-8-8": { title: "22R", opponent: "안양", match: "안양 vs 대전", time: "19:30", venue: "안양종합(원정)", type: "A" },
-  "2026-8-15": { title: "23R", opponent: "서울", match: "서울 vs 대전", time: "19:30", venue: "서울월드컵(원정)", type: "A" },
-  "2026-8-23": { title: "24R", opponent: "강원", match: "대전 vs 강원", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-8-26": { title: "25R", opponent: "울산", match: "대전 vs 울산", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-8-30": { title: "26R", opponent: "제주", match: "제주 vs 대전", time: "19:30", venue: "제주월드컵(원정)", type: "A" },
-  "2026-9-5": { title: "27R", opponent: "부천", match: "부천 vs 대전", time: "19:00", venue: "부천종합(원정)", type: "A" },
-  "2026-9-9": { title: "28R", opponent: "안양", match: "대전 vs 안양", time: "19:30", venue: "대전월드컵(홈)", type: "H" },
-  "2026-9-12": { title: "29R", opponent: "포항", match: "대전 vs 포항", time: "19:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-10-9": { title: "31R", opponent: "전북", match: "대전 vs 전북", time: "14:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-10-18": { title: "32R", opponent: "광주", match: "대전 vs 광주", time: "14:00", venue: "대전월드컵(홈)", type: "H" },
-  "2026-10-24": { title: "33R", opponent: "김천", match: "김천 vs 대전", time: "14:00", venue: "김천종합(원정)", type: "A" },
-  "2026-6-12": { title: "WC", opponent: "유럽PO", match: "한국 vs 유럽 PO D", time: "11:00", venue: "조별리그", type: "WC" },
-  "2026-6-19": { title: "WC", opponent: "멕시코", match: "한국 vs 멕시코", time: "10:00", venue: "조별리그", type: "WC" },
-  "2026-6-25": { title: "WC", opponent: "남아공", match: "한국 vs 남아공", time: "10:00", venue: "조별리그", type: "WC" },
-};
-
-const isAMatchPeriod = (y, m, d) => {
-  if (y !== 2026) return false;
-  if (m === 3 && d >= 23 && d <= 31) return true;
-  if (m === 6 && d >= 1 && d <= 9) return true;
-  if ((m === 9 && d >= 21) || (m === 10 && d <= 6)) return true;
-  if (m === 11 && d >= 9 && d <= 17) return true;
-  return false;
-};
-
+// 공휴일 데이터
 const getHolidays = (y) => {
   const h = {};
-  h[`${y}-1-1`] = "신정"; h[`${y}-3-1`] = "삼일절"; h[`${y}-5-5`] = "어린이날";
-  h[`${y}-6-6`] = "현충일"; h[`${y}-7-17`] = "제헌절"; h[`${y}-8-15`] = "광복절";
-  h[`${y}-10-3`] = "개천절"; h[`${y}-10-9`] = "한글날"; h[`${y}-12-25`] = "성탄절";
-  const lunarData = { 2026: { seol: '2-17', buddha: '5-24', chu: '9-25' }, 2027: { seol: '2-6', buddha: '5-13', chu: '9-15' }, 2028: { seol: '1-26', buddha: '5-2', chu: '10-3' }, 2029: { seol: '2-13', buddha: '5-20', chu: '9-22' }, 2030: { seol: '2-3', buddha: '5-9', chu: '9-12' } };
+  h[`${y}-1-1`] = '신정';
+  h[`${y}-3-1`] = '삼일절';
+  h[`${y}-5-5`] = '어린이날';
+  h[`${y}-6-6`] = '현충일';
+  h[`${y}-7-17`] = '제헌절';
+  h[`${y}-8-15`] = '광복절';
+  h[`${y}-10-3`] = '개천절';
+  h[`${y}-10-9`] = '한글날';
+  h[`${y}-12-25`] = '성탄절';
+  const lunarData = {
+    2026: { seol: '2-17', buddha: '5-24', chu: '9-25' },
+    2027: { seol: '2-6', buddha: '5-13', chu: '9-15' },
+    2028: { seol: '1-26', buddha: '5-2', chu: '10-3' },
+    2029: { seol: '2-13', buddha: '5-20', chu: '9-22' },
+    2030: { seol: '2-3', buddha: '5-9', chu: '9-12' },
+  };
   if (lunarData[y]) {
     const { seol, buddha, chu } = lunarData[y];
     const sDate = new Date(`${y}-${seol}`);
-    h[`${y}-${sDate.getMonth()+1}-${sDate.getDate()-1}`] = "설연휴"; h[`${y}-${sDate.getMonth()+1}-${sDate.getDate()}`] = "설날"; h[`${y}-${sDate.getMonth()+1}-${sDate.getDate()+1}`] = "설연휴";
-    h[`${y}-${buddha}`] = "부처님오신날";
+    h[`${y}-${sDate.getMonth() + 1}-${sDate.getDate() - 1}`] = '설연휴';
+    h[`${y}-${sDate.getMonth() + 1}-${sDate.getDate()}`] = '설날';
+    h[`${y}-${sDate.getMonth() + 1}-${sDate.getDate() + 1}`] = '설연휴';
+    h[`${y}-${buddha}`] = '부처님오신날';
     const cDate = new Date(`${y}-${chu}`);
-    h[`${y}-${cDate.getMonth()+1}-${cDate.getDate()-1}`] = "추석연휴"; h[`${y}-${cDate.getMonth()+1}-${cDate.getDate()}`] = "추석"; h[`${y}-${cDate.getMonth()+1}-${cDate.getDate()+1}`] = "추석연휴";
+    h[`${y}-${cDate.getMonth() + 1}-${cDate.getDate() - 1}`] = '추석연휴';
+    h[`${y}-${cDate.getMonth() + 1}-${cDate.getDate()}`] = '추석';
+    h[`${y}-${cDate.getMonth() + 1}-${cDate.getDate() + 1}`] = '추석연휴';
   }
   const checkAltHoliday = (dateStr) => {
-    const dObj = new Date(dateStr); const day = dObj.getDay();
-    if (day === 0 || day === 6) { 
-      let nextDay = new Date(dObj); nextDay.setDate(nextDay.getDate() + (day === 6 ? 2 : 1)); 
-      while (h[`${nextDay.getFullYear()}-${nextDay.getMonth()+1}-${nextDay.getDate()}`]) { nextDay.setDate(nextDay.getDate() + 1); }
-      h[`${nextDay.getFullYear()}-${nextDay.getMonth()+1}-${nextDay.getDate()}`] = "대체공휴일";
+    const dObj = new Date(dateStr);
+    const day = dObj.getDay();
+    if (day === 0 || day === 6) {
+      let nextDay = new Date(dObj);
+      nextDay.setDate(nextDay.getDate() + (day === 6 ? 2 : 1));
+      while (
+        h[
+          `${nextDay.getFullYear()}-${
+            nextDay.getMonth() + 1
+          }-${nextDay.getDate()}`
+        ]
+      ) {
+        nextDay.setDate(nextDay.getDate() + 1);
+      }
+      h[
+        `${nextDay.getFullYear()}-${
+          nextDay.getMonth() + 1
+        }-${nextDay.getDate()}`
+      ] = '대체공휴일';
     }
   };
-  checkAltHoliday(`${y}-3-1`); checkAltHoliday(`${y}-5-5`); checkAltHoliday(`${y}-8-15`);
-  checkAltHoliday(`${y}-10-3`); checkAltHoliday(`${y}-10-9`); checkAltHoliday(`${y}-12-25`);
-  if(lunarData[y]) checkAltHoliday(`${y}-${lunarData[y].buddha}`);
+  checkAltHoliday(`${y}-3-1`);
+  checkAltHoliday(`${y}-5-5`);
+  checkAltHoliday(`${y}-8-15`);
+  checkAltHoliday(`${y}-10-3`);
+  checkAltHoliday(`${y}-10-9`);
+  checkAltHoliday(`${y}-12-25`);
+  if (lunarData[y]) checkAltHoliday(`${y}-${lunarData[y].buddha}`);
   return h;
 };
 
@@ -104,10 +115,30 @@ const formatPopupDate = (dateStr) => {
   if (!dateStr) return '';
   try {
     const parts = dateStr.split('-');
-    const y = parseInt(parts[0], 10); const m = parseInt(parts[1], 10); const d = parseInt(parts[2], 10);
-    const date = new Date(y, m - 1, d); const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-  } catch(e) { return dateStr; }
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    const date = new Date(y, m - 1, d);
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return `${
+      months[date.getMonth()]
+    } ${date.getDate()}, ${date.getFullYear()}`;
+  } catch (e) {
+    return dateStr;
+  }
 };
 
 const formatHolidayText = (name) => {
@@ -119,25 +150,16 @@ const formatHolidayText = (name) => {
   return [name];
 };
 
-const generateTimeOptions = () => {
-  const options = [];
-  for (let i = 0; i < 24 * 2; i++) {
-    const h = Math.floor(i / 2).toString().padStart(2, '0');
-    const m = i % 2 === 0 ? '00' : '30';
-    options.push(`${h}:${m}`);
-  }
-  return options;
-};
-const TIME_OPTIONS = generateTimeOptions();
-const TEAM_EMBLEM_SPRITE_URL = "https://www.dhcfc.kr/images/sub/emb_1_2.jpg";
+const GGUMDORI_URL =
+  'https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png';
 
 export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 로딩 화면 상단 상태표시줄 색상을 녹색(#1b8a70)으로 완벽 동기화
+  // 🚨 1. 로딩 화면 상단 상태표시줄 색상 처리 (로딩 시 #1a050a, 완료 시 #0a0c10)
   useEffect(() => {
-    const bgColor = showSplash ? '#1b8a70' : '#0a0c10';
+    const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
     document.body.style.transition = 'background-color 0.5s ease-in-out';
     
@@ -162,7 +184,9 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isMinLoadingTimeDone, setIsMinLoadingTimeDone] = useState(false);
   const [splashDotCount, setSplashDotCount] = useState(0); 
-  const [masterData, setMasterData] = useState({ schedules: {}, userMatches: {}, editPassword: "1234" });
+  const [masterData, setMasterData] = useState({ schedules: {}, editPassword: "1234" });
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [familyKey, setFamilyKey] = useState("");
   const [editPass, setEditPass] = useState("");
@@ -170,7 +194,7 @@ export default function App() {
   const [showPwdChange, setShowPwdChange] = useState(false);
 
   const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1)); 
-  const [viewModal, setViewModal] = useState({ isOpen: false, match: null, memo: null, dateKey: null });
+  const [viewModal, setViewModal] = useState({ isOpen: false, memo: null, dateKey: null });
   const [modalState, setModalState] = useState({ isOpen: false, type: null, dateKey: null, data: {} });
   const [selectedDayKey, setSelectedDayKey] = useState(null);
   const [drawMode, setDrawMode] = useState(null); 
@@ -196,26 +220,6 @@ export default function App() {
   const activeKey = showShiftMenu ? 'shift' : (showNightMenu ? 'night' : drawMode);
 
   const showToast = (message) => { setToast(message); setTimeout(() => setToast(null), 2500); };
-
-  const nextMatchInfo = useMemo(() => {
-    const now = new Date(); now.setHours(0, 0, 0, 0);
-    const combinedMatches = { ...MASTER_MATCH_SCHEDULE };
-    if (masterData.userMatches) {
-      Object.entries(masterData.userMatches).forEach(([dateKey, matchData]) => {
-        if (matchData.isDeleted) { delete combinedMatches[dateKey]; } 
-        else { combinedMatches[dateKey] = matchData; }
-      });
-    }
-    const futureMatches = Object.entries(combinedMatches)
-      .filter(([dateStr]) => new Date(dateStr) >= now)
-      .sort((a, b) => new Date(a[0]) - new Date(b[0]));
-    if (futureMatches.length > 0) {
-      const matchDate = new Date(futureMatches[0][0]); const diffTime = matchDate - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return { dday: diffDays, dateKey: futureMatches[0][0], ...futureMatches[0][1] };
-    }
-    return null;
-  }, [masterData.userMatches]); 
 
   const monthlyWorkCount = useMemo(() => {
     let dayCount = 0; let nightCount = 0; let dutyCount = 0;
@@ -249,7 +253,14 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          try {
+             await signInWithCustomToken(auth, __initial_auth_token);
+          } catch (tokenError) {
+             console.warn("Token auth failed, falling back to anonymous auth");
+             await signInAnonymously(auth);
+          }
+        } 
         else { await signInAnonymously(auth); }
       } catch (e) {
         console.error("Auth error:", e);
@@ -269,29 +280,61 @@ export default function App() {
     return () => { unsub(); clearTimeout(timer); };
   }, []);
 
-  const connectServer = async (name, isAuto = false) => {
-    const target = name || familyKey.trim();
-    if (!target) { if (!isAuto) showToast("🟡 공유코드 입력 필요"); return; }
+  const connectServer = async (targetKey, inputPass, isAuto = false) => {
+    const key = targetKey || familyKey.trim();
+    const pass = inputPass || editPass;
+
+    if (!key) { if (!isAuto) showToast("🟡 공유코드 입력 필요"); return; }
+    if (!pass) { if (!isAuto) showToast("🟡 비밀번호 입력 필요"); return; }
     if (!user) { if (!isAuto) showToast("🔴 서버 연결 준비중..."); return; }
+
     if (syncUnsub.current) syncUnsub.current();
-    localStorage.setItem(STORAGE_KEY, target);
-    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', target);
+    
+    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', key);
+
     syncUnsub.current = onSnapshot(docRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data().content;
-        if (!data.userMatches) data.userMatches = {}; 
-        if (!data.schedules) data.schedules = {};
-        setMasterData(data); 
-        if (!isAuto) showToast("🟢 데이터 연동 성공");
-      } else { if (!isAuto) showToast("🔴 새로 생성됨"); }
+        if (data.editPassword === pass) {
+          if (!data.schedules) data.schedules = {};
+          setMasterData(data);
+          setIsAuthenticated(true);
+          if (!isAuto) showToast("🟢 접속 성공");
+          if (!isAuto) setShowSettings(false);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, pass }));
+        } else {
+          if (!isAuto) showToast("🔴 비밀번호가 틀립니다");
+          setIsAuthenticated(false);
+          setShowSettings(true);
+          localStorage.removeItem(STORAGE_KEY);
+          if (syncUnsub.current) syncUnsub.current();
+        }
+      } else {
+        const newData = { schedules: {}, editPassword: pass };
+        setMasterData(newData);
+        setIsAuthenticated(true);
+        if (!isAuto) showToast("🟢 새 달력 생성됨");
+        if (!isAuto) setShowSettings(false);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, pass }));
+        setDoc(docRef, { content: newData, updatedAt: new Date().toISOString() });
+      }
     }, (error) => { if (!isAuto) showToast("🔴 네트워크 확인 필요"); });
-    if (!isAuto) setShowSettings(false);
   };
 
   useEffect(() => {
     if (isAuthReady && user) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) { setFamilyKey(saved); connectServer(saved, true); }
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && saved.key && saved.pass) {
+          setFamilyKey(saved.key);
+          setEditPass(saved.pass);
+          connectServer(saved.key, saved.pass, true);
+        } else {
+          setShowSettings(true); 
+        }
+      } catch (e) {
+        setShowSettings(true);
+      }
     }
   }, [isAuthReady, user]);
 
@@ -362,22 +405,22 @@ export default function App() {
   };
 
   const saveToHistory = () => {
-    setScheduleHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {}, userMatches: masterData.userMatches || {} }))].slice(-10));
+    setScheduleHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {} }))].slice(-10));
     setRedoHistory([]); 
   };
 
   const handleUndo = () => {
     if (scheduleHistory.length === 0) return;
     const newHistory = [...scheduleHistory]; const previousState = newHistory.pop();
-    setRedoHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {}, userMatches: masterData.userMatches || {} }))].slice(-10));
-    setScheduleHistory(newHistory); setMasterData(prev => ({ ...prev, schedules: previousState.schedules, userMatches: previousState.userMatches }));
+    setRedoHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {} }))].slice(-10));
+    setScheduleHistory(newHistory); setMasterData(prev => ({ ...prev, schedules: previousState.schedules }));
   };
 
   const handleRedo = () => {
     if (redoHistory.length === 0) return;
     const newRedo = [...redoHistory]; const nextState = newRedo.pop();
-    setScheduleHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {}, userMatches: masterData.userMatches || {} }))].slice(-10));
-    setRedoHistory(newRedo); setMasterData(prev => ({ ...prev, schedules: nextState.schedules, userMatches: nextState.userMatches }));
+    setScheduleHistory(prev => [...prev, JSON.parse(JSON.stringify({ schedules: masterData.schedules || {} }))].slice(-10));
+    setRedoHistory(newRedo); setMasterData(prev => ({ ...prev, schedules: nextState.schedules }));
   };
 
   const applyPattern = (group) => {
@@ -411,29 +454,20 @@ export default function App() {
     'off': { i: <Home size={20}/>, l: 'OFF', tc: 'text-teal-400' }, 
     'holiday': { i: <Coffee size={20}/>, l: 'REST', tc: 'text-rose-400' }, 
     'schedule': { i: <Calendar size={20}/>, l: 'PLAN', tc: 'text-sky-400' }, 
-    'soccer': { i: <Trophy size={20}/>, l: 'MATCH', tc: 'text-[#9f1239]' }, 
     'memo': { i: <FileText size={20}/>, l: 'MEMO', tc: 'text-fuchsia-400' }, 
     'erase': { i: <Brush size={20}/>, l: 'DEL', tc: 'text-red-500' },
-  };
-
-  const getThemeClasses = (type) => {
-    if (type === 'H') return { outer: 'bg-[#0d2c1e]/60 backdrop-blur-xl frost-border', inner: 'bg-[#163b2a]/60 backdrop-blur-md shadow-inner' }; 
-    if (type === 'A') return { outer: 'bg-[#360e13]/60 backdrop-blur-xl frost-border', inner: 'bg-[#4a161c]/60 backdrop-blur-md shadow-inner' }; 
-    if (type === 'WC') return { outer: 'bg-[#0f172a]/60 backdrop-blur-xl frost-border', inner: 'bg-[#1e293b]/60 backdrop-blur-md shadow-inner' }; 
-    return { outer: 'bg-[#131b2c]/60 backdrop-blur-xl frost-border', inner: 'bg-[#1e293b]/60 backdrop-blur-md shadow-inner' }; 
   };
 
   const renderDayCell = (d, monthType) => {
     const year = currentDate.getFullYear(); const month = currentDate.getMonth() + (monthType === 'prev' ? -1 : monthType === 'next' ? 1 : 0);
     const dateObj = new Date(year, month, d); const key = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()}`;
     const s = masterData.schedules?.[key] || {};
-    let m = MASTER_MATCH_SCHEDULE[key];
-    if (masterData.userMatches && masterData.userMatches[key]) { m = masterData.userMatches[key].isDeleted ? null : masterData.userMatches[key]; }
+    
     const holName = cachedHolidays[key]; const isToday = new Date().toDateString() === dateObj.toDateString();
-    const isNextMatch = nextMatchInfo && nextMatchInfo.dateKey === key; const isSelected = selectedDayKey === key;
-    const isAMatch = isAMatchPeriod(dateObj.getFullYear(), dateObj.getMonth() + 1, dateObj.getDate());
-    const dateColor = dateObj.getDay() === 0 || holName ? 'text-[#e55a5a]' : dateObj.getDay() === 6 ? 'text-[#5a8be5]' : (isNextMatch ? 'text-[#D4AF37]' : 'text-slate-400');
-    const bgClass = isNextMatch ? 'bg-[#1c1c1e]/80 border border-[#D4AF37]/50 scale-[1.02]' : isSelected ? 'bg-[#2a2a2c]/80 border border-[#60a5fa]/50 scale-[1.02]' : 'bg-[#1c1c1e]/60 border border-white/5';
+    const isSelected = selectedDayKey === key;
+    
+    const dateColor = dateObj.getDay() === 0 || holName ? 'text-[#e55a5a]' : dateObj.getDay() === 6 ? 'text-[#5a8be5]' : 'text-slate-400';
+    const bgClass = isSelected ? 'bg-[#2a2a2c]/80 border border-[#60a5fa]/50 scale-[1.02]' : 'bg-[#1c1c1e]/60 border border-white/5';
     
     return (
       <div key={`${monthType}-${d}`} onClick={() => {
@@ -442,25 +476,36 @@ export default function App() {
             if (!drawMode) return; 
             if (drawMode === 'shift') { setSelectedDayKey(key); return; }
             if (drawMode === 'memo') { setModalState({ isOpen: true, type: 'memo', dateKey: key, data: { text: s.memo || '' } }); return; }
-            if (drawMode === 'soccer') { setModalState({ isOpen: true, type: 'soccer', dateKey: key, data: m ? { ...m } : { title: '', opponent: '', match: '', time: '19:00', venue: '대전월드컵(홈)', type: 'H' } }); return; }
             if (drawMode === 'erase') { saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if (newData.schedules[key]?.memo) delete newData.schedules[key].memo; setMasterData(newData); } 
             else if (['day', 'night', 'night_duty', 'off', 'holiday', 'schedule'].includes(drawMode)) { 
               saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if(!newData.schedules[key]) newData.schedules[key] = {}; newData.schedules[key].type = drawMode; if (drawMode === 'schedule') { newData.schedules[key].text = loadedScheduleText; } setMasterData(newData); 
             }
-          } else { if (m || s.memo) setViewModal({ isOpen: true, match: m, memo: s.memo, dateKey: key }); }
+          } else { if (s.memo) setViewModal({ isOpen: true, memo: s.memo, dateKey: key }); }
         }} 
         className={`flex-1 h-[105px] mx-[2px] rounded-[1.1rem] relative flex flex-col shadow-sm cursor-pointer overflow-hidden ${bgClass} ${monthType !== 'current' ? 'opacity-40' : ''} active:scale-[0.92] transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] select-none`}
         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
-        <div className="w-full flex justify-between items-start px-2 pt-1.5 shrink-0 h-[22px]" style={{ pointerEvents: 'none' }}><span className={`text-[11px] font-black ${dateColor}`}>{d}</span>{holName && (<div className="flex flex-col items-end leading-[9px] text-right">{formatHolidayText(holName).map((line, idx) => (<span key={idx} className="text-[7px] font-black text-[#e55a5a] whitespace-nowrap">{line}</span>))}</div>)}</div>
-        <div className="w-full h-[22px] flex justify-center items-center shrink-0" style={{ pointerEvents: 'none' }}>{s.type && <div className={`${maps[s.type]?.tc} drop-shadow-sm scale-[0.85]`}>{maps[s.type]?.i}</div>}</div>
-        <div className="flex-1 w-full grid grid-rows-3 gap-0 px-0.5 pb-[4px]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full h-full flex items-start justify-center overflow-hidden">
+        <div className="w-full flex justify-between items-start px-2 pt-1.5 shrink-0 h-[22px]" style={{ pointerEvents: 'none' }}>
+          <span className={`text-[11px] font-black ${dateColor}`}>{d}</span>
+          {holName && (<div className="flex flex-col items-end leading-[9px] text-right">{formatHolidayText(holName).map((line, idx) => (<span key={idx} className="text-[7px] font-black text-[#e55a5a] whitespace-nowrap">{line}</span>))}</div>)}
+        </div>
+        <div className="w-full h-[22px] flex justify-center items-center shrink-0" style={{ pointerEvents: 'none' }}>
+          {s.type && <div className={`${maps[s.type]?.tc} drop-shadow-sm scale-[0.85]`}>{maps[s.type]?.i}</div>}
+        </div>
+        
+        {/* 🚨 일정, 10px 여백, 메모 3단 구조 */}
+        <div className="flex-1 w-full flex flex-col px-0.5 pb-[4px]" style={{ pointerEvents: 'none' }}>
+          <div className="w-full h-[18px] flex items-start justify-center overflow-hidden shrink-0">
             {s.type === 'schedule' && s.text && <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-cyan-900/40 text-cyan-400 border-[0.5px] border-cyan-500/30 truncate">{s.text}</div>}
             {s.type === 'night_duty' && <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-[#2e1065]/40 border-[0.5px] border-[#4c1d95]/70 text-[#c4b5fd] truncate">당직</div>}
           </div>
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">{s.memo && <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-indigo-500/20 border-[0.5px] border-indigo-400/30 text-indigo-300 truncate shadow-sm">{s.memo}</div>}</div>
-          <div className="w-full h-full flex items-end justify-center overflow-hidden"></div>
+          
+          <div className="w-full h-[10px] shrink-0"></div>
+          
+          <div className="w-full flex-1 flex items-start justify-center overflow-hidden min-h-[20px]">
+            {s.memo && <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-indigo-500/20 border-[0.5px] border-indigo-400/30 text-indigo-300 truncate shadow-sm">{s.memo}</div>}
+          </div>
         </div>
+        
         {isToday && <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#D4AF37] rounded-full shadow-[0_0_6px_rgba(212,175,55,0.8)]" style={{ pointerEvents: 'none' }}></div>}
       </div>
     );
@@ -474,9 +519,7 @@ export default function App() {
 
   if (!isTailwindLoaded) {
     return (
-      <div
-        style={{ width: '100vw', height: '100vh', backgroundColor: '#0a0c10', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}
-      >
+      <div style={{ width: '100vw', height: '100vh', backgroundColor: '#0a0c10', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         <h1 style={{ color: '#D4AF37', fontWeight: 'bold', fontSize: '20px', letterSpacing: '2px', fontFamily: 'sans-serif' }}>LOADING DESIGN...</h1>
       </div>
     );
@@ -491,11 +534,7 @@ export default function App() {
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
           @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
           .animate-floating { animation: floating 3.5s ease-in-out infinite; }
-          @keyframes textShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-          .animate-text-shimmer { background: linear-gradient(to right, #800000 20%, #ff4444 50%, #800000 80%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: textShimmer 2.5s linear infinite; }
-          @keyframes shimmerSweep { 0% { transform: translateX(-150%) skewX(-45deg); } 100% { transform: translateX(150%) skewX(-45deg); } }
-          .animate-shimmer { animation: shimmerSweep 3s infinite; }
-          .metallic-gold-text { background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B48D1D 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; text-shadow: 0px 1px 3px rgba(0,0,0,0.3); }
+          .subtle-gold-text { background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #9C7C38 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); }
           .ios-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none; }
           .frost-border { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
           .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -505,85 +544,84 @@ export default function App() {
       
       {toast && (<div className="fixed top-12 left-1/2 -translate-x-1/2 z-[99999] animate-in slide-in-from-top-2 fade-in duration-200" style={{ pointerEvents: 'none' }}><div className="bg-[#1c1c1e]/70 backdrop-blur-xl frost-border px-4 py-2.5 rounded-full flex items-center justify-center min-w-[140px]"><span className="text-white text-[13px] font-black tracking-wide">{toast}</span></div></div>)}
       
+      {/* 🚨 순정 스플래시 화면 복구 (축구 엠블럼 삭제, 꿈돌이 유지) */}
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ backgroundColor: '#1b8a70', pointerEvents: 'none' }} >
-          <div className="absolute inset-0 overflow-hidden flex items-center justify-center" style={{ pointerEvents: 'none' }}><div style={{ position: 'absolute', width: '283px', height: '283px', backgroundImage: `url(${TEAM_EMBLEM_SPRITE_URL})`, backgroundSize: '400% 200%', backgroundPosition: '33.333% 0%', transformOrigin: '5% 50%', transform: 'scale(300)', zIndex: -1 }} /></div>
+        <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ background: 'linear-gradient(135deg, #1a050a 0%, #4a161c 100%)', pointerEvents: 'none' }} >
           <div className="relative z-10 flex flex-col items-center w-full px-6">
-            <div className="relative overflow-hidden mb-12" style={{ width: '275px', height: '194px', transform: 'scale(1.35)', transformOrigin: 'center', WebkitMaskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent), linear-gradient(to bottom, transparent, black 2%, black 98%, transparent)', WebkitMaskComposite: 'source-in', maskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent), linear-gradient(to bottom, transparent, black 2%, black 98%, transparent)', maskComposite: 'intersect' }} >
-              <div style={{ position: 'absolute', top: '-4px', left: '-4px', width: '283px', height: '283px', backgroundImage: `url(${TEAM_EMBLEM_SPRITE_URL})`, backgroundSize: '400% 200%', backgroundPosition: '33.333% 0%', imageRendering: '-webkit-optimize-contrast' }} />
+            <div className="relative w-60 h-60 animate-floating -mb-10">
+              <div className="absolute inset-0 bg-[#D4AF37] blur-[50px] opacity-15 rounded-full"></div>
+              <img src={GGUMDORI_URL} alt="Kkumdori" className="relative w-full h-full object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]" />
             </div>
-            <div className="w-full flex justify-center mb-3">
-              <div className="relative inline-flex">
-                <h1 className="text-2xl font-[900] uppercase whitespace-nowrap absolute inset-0" style={{ color: '#ffffff', textShadow: `-1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff, 0px -1px 0 #ffffff, 0px 1px 0 #ffffff, -1px 0px 0 #ffffff, 1px 0px 0 #ffffff, 0px 6px 8px rgba(0,0,0,0.5)`, zIndex: 1 }}>DAEJEON HANACITIZEN</h1>
-                <h1 className="text-2xl font-[900] uppercase whitespace-nowrap relative" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 0%, #1b8a70 50%, #ffffff 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', zIndex: 2 }}>DAEJEON HANACITIZEN</h1>
-              </div>
+            <h1 className="text-3xl font-[900] uppercase tracking-widest subtle-gold-text mb-2 relative z-10">DJTC SHIFT</h1>
+            <div className="relative z-10 flex justify-center text-[12px] font-black tracking-widest text-[#D4AF37]/70 drop-shadow-md animate-pulse">
+              <span className="relative inline-block">
+                CONNECTING<span className="absolute left-full top-0 w-[24px] text-left">{".".repeat(splashDotCount)}</span>
+              </span>
             </div>
-            <p className="text-xl font-black tracking-widest drop-shadow-md relative z-10 animate-text-shimmer flex items-center justify-center">CONNECTING<span className="inline-block text-left w-[24px]">{".".repeat(splashDotCount)}</span></p>
-            <p className="absolute -bottom-24 text-[10px] font-bold text-white/70 tracking-widest uppercase relative z-10">DJTC SHIFT V2.02.02</p>
+            <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">V2.02.02</p>
           </div>
         </div>
       )}
 
       <div className="max-w-[500px] mx-auto min-h-screen flex flex-col relative shadow-2xl font-sans overflow-hidden" style={{ backgroundColor: '#0a0c10' }}>
-        <header className="pt-3 pb-5 px-5 rounded-b-[2rem] shadow-xl z-20 relative border-b border-rose-900/30" style={{ background: 'linear-gradient(145deg, #6b0f0f 0%, #3d0505 100%)' }}>
-          <div className="flex justify-between items-center mb-5 mt-2">
+        <header className="pt-3 pb-3 px-5 rounded-b-[2rem] shadow-xl z-20 relative border-b border-[#D4AF37]/20" style={{ background: 'linear-gradient(145deg, #4a161c 0%, #1a050a 100%)' }}>
+          <div className="flex justify-between items-center mb-3 mt-2">
             <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#D4AF37]" /><span className="text-[10px] font-black tracking-widest uppercase text-white/80">DJTC SHIFT V2.02.02</span></div>
-            <button onClick={() => setShowSettings(!showSettings)} className="p-2 text-white/80 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85] relative z-30" style={{ WebkitTapHighlightColor: 'transparent' }}><Settings size={20}/></button>
+            <button onClick={() => { if(isAuthenticated) setShowSettings(!showSettings); }} className="p-2 text-white/80 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85] relative z-30" style={{ WebkitTapHighlightColor: 'transparent' }}><Settings size={20}/></button>
           </div>
-          <div className="flex justify-between items-center mb-5 px-2 relative z-30">
+          <div className="flex justify-between items-center mb-1 px-2 relative z-30">
             <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-1 relative z-40 transition-transform active:scale-[0.85]" style={{ WebkitTapHighlightColor: 'transparent' }}><ChevronLeft size={28} className="text-white/80"/></button>
             <div className="flex flex-col items-center justify-center"><h1 onClick={() => setCurrentDate(new Date())} className="text-2xl font-black tracking-tighter text-white drop-shadow-sm cursor-pointer px-4 py-2 relative z-40 select-none transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>{currentDate.getFullYear()}년 {currentDate.getMonth()+1}월</h1></div>
             <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-1 relative z-40 transition-transform active:scale-[0.85]" style={{ WebkitTapHighlightColor: 'transparent' }}><ChevronRight size={28} className="text-white/80"/></button>
           </div>
-          {nextMatchInfo && (
-            <div onClick={() => setViewModal({ isOpen: true, match: nextMatchInfo, memo: null, dateKey: nextMatchInfo.dateKey })} className={`cursor-pointer relative overflow-hidden rounded-[1.5rem] p-4 flex items-center justify-between bg-white/5 backdrop-blur-xl frost-border transition-transform active:scale-[0.96] select-none ${nextMatchInfo.dday === 0 ? 'border-[#D4AF37]' : ''}`} style={{ WebkitTapHighlightColor: 'transparent' }}>
-              {nextMatchInfo.dday === 0 && <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden"><div className="absolute top-0 left-0 w-[200%] h-full bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent opacity-50 animate-shimmer"></div></div>}
-              <div className="text-left relative z-10"><span className="text-[10px] font-black block mb-1 uppercase tracking-widest metallic-gold-text">Next Match</span><span className="text-xl font-black text-white block leading-tight tracking-tight drop-shadow-md">vs {nextMatchInfo.opponent}</span><span className="text-[11px] font-bold text-white/80 block mt-1">{nextMatchInfo.venue}</span></div>
-              <div className="text-right relative z-10"><div className="text-3xl font-black italic tracking-tighter metallic-gold-text">D-{nextMatchInfo.dday === 0 ? "DAY" : nextMatchInfo.dday}</div><span className="text-xs font-bold text-[#D4AF37]/70 mt-1 block">{nextMatchInfo.time}</span></div>
-            </div>
-          )}
         </header>
 
         <div className={`overflow-hidden transition-all duration-500 ease-in-out z-20 ${showSettings ? 'max-h-[800px] opacity-100 mt-2 px-4' : 'max-h-0 opacity-0'}`}>
           <div className="p-5 bg-[#1c1c1e]/80 backdrop-blur-xl frost-border rounded-[2.5rem] flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2.5">
-              <input value={familyKey} onChange={(e)=>setFamilyKey(e.target.value)} onBlur={(e) => { if (e.target.value) connectServer(e.target.value, true); }} placeholder="공유코드" className="w-[65%] h-12 px-5 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none" />
-              <button onClick={()=>connectServer(null, false)} className="w-[32%] h-12 border border-emerald-500/50 text-emerald-400 rounded-full font-black text-[12px] transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>연결/복구</button>
+              <input value={familyKey} onChange={(e)=>setFamilyKey(e.target.value)} onBlur={(e) => { if (e.target.value) connectServer(e.target.value, true); }} placeholder="공유코드" className="w-[65%] h-12 px-5 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none focus:border-[#60a5fa]/50 transition-colors" />
+              <button onClick={()=>connectServer(familyKey, editPass, false)} className="w-[32%] h-12 border border-emerald-500/50 text-emerald-400 bg-emerald-500/10 rounded-full font-black text-[12px] transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>연결/접속</button>
             </div>
             <div className="flex items-center justify-between gap-2.5">
               <div className="relative w-[65%] h-12">
-                <input type="password" value={editPass} onChange={(e)=>setEditPass(e.target.value)} placeholder="비밀번호" className="w-full h-full px-5 pr-12 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none" />
+                <input type="password" value={editPass} onChange={(e)=>setEditPass(e.target.value)} placeholder="비밀번호" className="w-full h-full px-5 pr-12 bg-black/40 border border-white/10 rounded-full text-[16px] font-bold text-white outline-none focus:border-[#60a5fa]/50 transition-colors" />
                 {isEditing && (
                   <button onClick={() => setShowPwdChange(!showPwdChange)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85]" style={{ WebkitTapHighlightColor: 'transparent' }}>
                     <Key size={14} className="text-slate-400" />
                   </button>
                 )}
               </div>
-              <button onClick={()=>{ if(isEditing) { setIsEditing(false); setShowSettings(false); setShowPwdChange(false); showToast("🟡 보호 모드 전환"); } else { if(editPass === masterData.editPassword) { setIsEditing(true); setShowSettings(false); showToast("🔴 편집 모드 켜짐"); } else { showToast("🔴 비밀번호 오류"); } } }} className="w-[32%] h-12 rounded-full font-black text-[12px] bg-transparent border border-rose-500/50 text-rose-400 flex justify-center items-center gap-1.5 transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>{isEditing ? "보호모드" : "편집해제"}</button>
+              <button onClick={()=>{ if (!isAuthenticated) { showToast('🟡 먼저 연결/접속을 눌러주세요'); return; } if (isEditing) { setIsEditing(false); showToast('🟡 보호 모드 전환'); } else { setIsEditing(true); setShowSettings(false); showToast('🔴 편집 모드 켜짐'); } }} className={`w-[32%] h-12 rounded-full font-black text-[12px] bg-transparent border flex justify-center items-center gap-1.5 transition-transform active:scale-[0.92] ${isEditing ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-rose-500/50 text-rose-400 bg-rose-500/10'}`} style={{ WebkitTapHighlightColor: 'transparent' }}>{isEditing ? "보호모드" : "편집모드"}</button>
             </div>
             {isEditing && showPwdChange && (
               <div className="flex items-center justify-between gap-2.5 pt-2 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                 <input type="password" value={newPass} onChange={(e)=>setNewPass(e.target.value)} placeholder="새 비밀번호 입력" className="w-[65%] h-12 px-5 bg-black/40 border border-[#60a5fa]/40 rounded-full text-[16px] font-bold text-white outline-none focus:border-[#60a5fa]/80 transition-colors" />
-                <button onClick={async () => { if(!newPass) return showToast("🟡 새 비밀번호를 입력하세요"); const newData = { ...masterData, editPassword: newPass }; setMasterData(newData); if(familyKey) { const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', familyKey.trim()); await setDoc(docRef, { content: newData, updatedAt: new Date().toISOString() }); } setNewPass(""); setShowPwdChange(false); showToast("🟢 비밀번호 변경 완료"); }} className="w-[32%] h-12 rounded-full font-black text-[12px] border border-[#60a5fa]/50 text-[#60a5fa] bg-[#60a5fa]/10 transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>변경저장</button>
+                <button onClick={async () => { if(!newPass) return showToast("🟡 새 비밀번호를 입력하세요"); const newData = { ...masterData, editPassword: newPass }; setMasterData(newData); if(familyKey) { const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', familyKey.trim()); await setDoc(docRef, { content: newData, updatedAt: new Date().toISOString() }); } setEditPass(newPass); localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: newPass })); setNewPass(""); setShowPwdChange(false); showToast("🟢 비밀번호 변경 완료"); }} className="w-[32%] h-12 rounded-full font-black text-[12px] border border-[#60a5fa]/50 text-[#60a5fa] bg-[#60a5fa]/10 transition-transform active:scale-[0.92]" style={{ WebkitTapHighlightColor: 'transparent' }}>변경저장</button>
               </div>
             )}
           </div>
         </div>
 
-        {/* 🚨 3. 달력을 끝까지 스크롤 시 마지막 주가 툴바에 가려지지 않게 넉넉한 하단 여백 부여 (isEditing 상태 고려) */}
+        {/* 달력을 끝까지 스크롤 시 마지막 주가 툴바에 가려지지 않게 넉넉한 하단 여백 부여 (isEditing 상태 고려) */}
         <div className={`flex-1 px-4 flex flex-col overflow-hidden mt-4 relative`} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} >
-          <div className="absolute top-[45%] left-[50%] pointer-events-none z-[5]" style={{ transform: 'translate(-50%, -50%)' }}><div style={{ width: '210px', height: '185px', overflow: 'hidden', position: 'relative', transform: 'scale(1.4)', transformOrigin: 'center', backgroundColor: '#0a0c10' }}><div style={{ position: 'absolute', top: '-25px', left: '-45px', width: '300px', height: '300px', backgroundImage: `url(${TEAM_EMBLEM_SPRITE_URL})`, backgroundSize: '400% 200%', backgroundPosition: '100% 100%', filter: 'grayscale(100%) contrast(500%) brightness(0.18)', mixBlendMode: 'lighten' }} /></div></div>
           <div className="flex justify-between items-center px-5 py-3 mx-1 mb-4 bg-white/5 backdrop-blur-md frost-border rounded-full relative z-10"><span className="text-[12px] font-black text-white/60 tracking-widest">{currentDate.getMonth()+1}월 근무</span><div className="flex gap-3"><div className="flex items-center gap-1"><Sun size={14} className="text-yellow-500"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.day}</span></div><div className="flex items-center gap-1"><Moon size={14} className="text-indigo-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.night}</span></div><div className="flex items-center gap-1 pl-1 border-l border-white/10"><Bell size={14} className="text-violet-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.duty}</span></div></div></div>
           <div className="grid grid-cols-7 text-center py-2 text-[10px] font-black text-slate-500 mb-1 uppercase tracking-[0.2em] border-b border-white/5 relative z-10">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w,i)=><span key={w} className={i===0?'text-[#e55a5a]':i===6?'text-[#5a8be5]':''}>{w}</span>)}</div>
           <div 
-            className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500`}
+            className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500 ${!isAuthenticated ? 'blur-[6px] opacity-30 pointer-events-none' : ''}`}
             style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px' }}
           >
             {renderDaysGrid()}
           </div>
+          
+          {!isAuthenticated && (
+             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0c10]/30 backdrop-blur-[2px]">
+               <ShieldCheck size={50} className="text-white/40 mb-3 drop-shadow-md" />
+               <span className="text-white/80 font-black tracking-widest text-[13px] bg-black/60 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">보안 잠금 상태입니다</span>
+             </div>
+          )}
         </div>
 
-        {/* --- 툴바 영역 (🚨 2. 홈 바와 겹치지 않도록 차분하게 바닥에 안정감 부여) --- */}
+        {/* --- 툴바 영역 --- */}
         {isEditing && (
           <>
             {(!viewModal.isOpen && !modalState.isOpen && !showShiftMenu && !showNightMenu && (scheduleHistory.length > 0 || redoHistory.length > 0)) && (
@@ -654,11 +692,11 @@ export default function App() {
 
                 <button onClick={async () => { 
                   if(!familyKey) return showToast("🟡 공유코드 입력 필요"); if(!user) return showToast("🔴 서버 연결 준비중");
-                  localStorage.setItem(STORAGE_KEY, familyKey.trim());
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: editPass }));
                   try { const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'userSchedules_v305', familyKey.trim()); await setDoc(docRef, { content: masterData, updatedAt: new Date().toISOString() }); setDrawMode(null); setShowShiftMenu(false); setShowNightMenu(false); showToast("🟢 서버 저장 완료"); } 
                   catch (e) { showToast("🔴 서버 저장 실패"); }
-                }} className="w-[64px] h-[64px] shrink-0 rounded-full bg-gradient-to-br from-[#4a161c] to-[#2a0b10] border border-rose-500/50 shadow-[0_0_25px_rgba(244,63,94,0.35)] flex flex-col items-center justify-center gap-1 pointer-events-auto transition-transform active:scale-[0.85] select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
-                  <Save size={20} className="text-rose-400"/><span className="text-[10px] font-black tracking-wider text-rose-400">SAVE</span>
+                }} className="w-[64px] h-[64px] shrink-0 rounded-full bg-gradient-to-br from-[#4a161c] to-[#2a0b10] border border-[#D4AF37]/40 shadow-[0_0_20px_rgba(212,175,55,0.25)] flex flex-col items-center justify-center gap-1 pointer-events-auto transition-transform active:scale-[0.85] select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
+                  <Save size={20} className="text-[#D4AF37]"/><span className="text-[10px] font-black tracking-wider text-[#D4AF37]">SAVE</span>
                 </button>
               </div>
             </div>
@@ -670,11 +708,12 @@ export default function App() {
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[300] flex items-center justify-center p-6" style={{ WebkitTapHighlightColor: 'transparent' }}>
             {modalState.type === 'scheduleInput' && (<div className="bg-[#1e293b]/70 backdrop-blur-2xl frost-border w-full max-w-[260px] rounded-[2rem] p-5 animate-modal-spring shadow-2xl shadow-black/60"><h3 className="text-[17px] font-black mb-4 text-white text-center">일정 입력</h3><input type="text" maxLength={2} placeholder="예: 연차, 휴가" className="w-full bg-[#0f172a]/80 rounded-xl p-3 text-[16px] font-bold text-center text-white outline-none border border-white/10 focus:border-[#60a5fa]/50 transition-colors" value={modalState.data.text || ''} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, text: e.target.value}}))} /><div className="flex gap-2 mt-4"><button onClick={() => setModalState({isOpen:false})} className="flex-1 py-2.5 border border-white/20 text-white/60 rounded-[1rem] font-black text-[14px] transition-transform active:scale-[0.92]">취소</button><button onClick={() => { setLoadedScheduleText(modalState.data.text || '일정'); setDrawMode('schedule'); setModalState({isOpen: false}); }} className="flex-1 py-2.5 border border-cyan-500/60 text-cyan-400 bg-cyan-500/10 rounded-[1rem] font-black text-[14px] transition-transform active:scale-[0.92]">확인</button></div></div>)}
             {modalState.type === 'memo' && (<div className="bg-[#131b2c]/70 backdrop-blur-2xl frost-border w-full max-w-[280px] rounded-[2rem] p-5 animate-modal-spring shadow-2xl shadow-black/60"><div className="flex justify-between items-center mb-4"><span className="text-white font-black text-[17px]">{formatPopupDate(modalState.dateKey)}</span><button onClick={() => setModalState({isOpen:false})} className="text-slate-400 p-1 bg-white/5 rounded-full transition-transform active:scale-[0.85]"><X size={18}/></button></div><textarea className="w-full h-28 bg-[#1e293b]/80 rounded-[1.2rem] p-3 text-[16px] font-bold text-white outline-none resize-none border border-white/10 focus:border-[#60a5fa]/50 transition-colors" value={modalState.data.text || ''} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, text: e.target.value}}))} /><button onClick={() => { saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if(!newData.schedules[modalState.dateKey]) newData.schedules[modalState.dateKey] = {}; newData.schedules[modalState.dateKey].memo = modalState.data.text; setMasterData(newData); setModalState({isOpen:false}); showToast("🟢 일정 반영 완료"); }} className="w-full py-3 mt-4 rounded-[1rem] font-black border border-blue-500/80 text-blue-400 bg-blue-500/10 text-[14px] transition-transform active:scale-[0.95]">일정반영</button></div>)}
-            {modalState.type === 'soccer' && (<div className="bg-[#1c1c1e]/70 backdrop-blur-2xl frost-border w-full max-w-[340px] rounded-[2.5rem] p-5 animate-modal-spring shadow-2xl shadow-black/60"><div className="flex items-center justify-between mb-5"><div className="flex items-center gap-2"><Trophy size={18} className="text-[#4ade80]" /><span className="text-white font-bold text-[16px]">{modalState.dateKey} MATCH</span></div><button onClick={() => setModalState({isOpen:false})} className="p-1.5 bg-white/5 rounded-full text-slate-400 transition-transform active:scale-[0.85]"><X size={16}/></button></div><div className="flex gap-2.5 mb-4"><button onClick={() => setModalState(prev => ({...prev, data: {...prev.data, type: 'H', venue: '대전월드컵(홈)'}}))} className={`flex-1 py-3.5 rounded-[1rem] text-[14px] font-black border transition-all active:scale-[0.92] ${modalState.data.type==='H' ? 'border-[#4ade80] text-[#4ade80] bg-[#4ade80]/10 shadow-[0_0_15px_rgba(74,222,128,0.15)]' : 'border-white/10 text-white/50 bg-[#2a2a2c]/40'}`}>HOME</button><button onClick={() => setModalState(prev => ({...prev, data: {...prev.data, type: 'A', venue: ''}}))} className={`flex-1 py-3.5 rounded-[1rem] text-[14px] font-black border transition-all active:scale-[0.92] ${modalState.data.type==='A' ? 'border-[#f43f5e] text-[#f43f5e] bg-[#f43f5e]/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]' : 'border-white/10 text-white/50 bg-[#2a2a2c]/40'}`}>AWAY</button></div><div className="grid grid-cols-2 gap-3 mt-2"><input type="text" placeholder="라운드" className="min-w-0 bg-[#2a2a2c]/80 text-white rounded-[1rem] p-3.5 font-bold text-[16px] outline-none w-full border border-white/10 focus:border-[#4ade80]/50 transition-colors" value={modalState.data.title || ''} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, title: e.target.value}}))} /><input type="text" placeholder="상대팀" className="min-w-0 bg-[#2a2a2c]/80 text-white rounded-[1rem] p-3.5 font-bold text-[16px] outline-none w-full border border-white/10 focus:border-[#4ade80]/50 transition-colors" value={modalState.data.opponent || ''} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, opponent: e.target.value}}))} /><div className="relative w-full min-0"><select className="ios-select w-full bg-[#2a2a2c]/80 text-white rounded-[1rem] p-3.5 font-bold text-[16px] text-center outline-none border border-white/10 focus:border-[#4ade80]/50 transition-colors" value={modalState.data.time || '19:00'} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, time: e.target.value}}))}>{TIME_OPTIONS.map(time => (<option key={time} value={time}>{time}</option>))}</select></div><input type="text" placeholder="장소" className="min-w-0 bg-[#2a2a2c]/80 text-white rounded-[1rem] p-3.5 font-bold text-[16px] outline-none w-full border border-white/10 focus:border-[#4ade80]/50 transition-colors" value={modalState.data.venue || ''} onChange={(e) => setModalState(prev => ({...prev, data: {...prev.data, venue: e.target.value}}))} /></div><div className="flex gap-3 mt-5 w-full"><button onClick={() => { saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if(!newData.userMatches) newData.userMatches = {}; newData.userMatches[modalState.dateKey] = { isDeleted: true }; setMasterData(newData); setModalState({isOpen:false}); showToast("🔴 일정 삭제 완료"); }} className="flex-1 py-3.5 rounded-[1rem] font-black text-[15px] border border-[#f43f5e]/40 text-[#f43f5e] bg-[#f43f5e]/10 transition-transform active:scale-[0.95] flex items-center justify-center gap-1.5"><Trash2 size={16}/> 일정삭제</button><button onClick={() => { saveToHistory(); const newData = JSON.parse(JSON.stringify(masterData)); if(!newData.userMatches) newData.userMatches = {}; const matchName = modalState.data.opponent ? `대전 vs ${modalState.data.opponent}` : "경기 일정"; newData.userMatches[modalState.dateKey] = { ...modalState.data, match: matchName, isDeleted: false }; setMasterData(newData); setModalState({isOpen:false}); showToast("🟢 일정 반영 완료"); }} className="flex-1 py-3.5 rounded-[1rem] font-black text-[15px] bg-[#4ade80]/20 text-[#4ade80] border border-[#4ade80]/40 transition-transform active:scale-[0.95] shadow-lg shadow-[#4ade80]/10 flex items-center justify-center">일정반영</button></div></div>)}
           </div>
         )}
-        {!isEditing && viewModal.isOpen && (() => { const theme = getThemeClasses(viewModal.match?.type); return (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6" onClick={()=>setViewModal({ isOpen: false, match: null, memo: null, dateKey: null })} style={{ WebkitTapHighlightColor: 'transparent' }}><div className={`w-full max-w-[320px] rounded-[2.5rem] p-6 animate-modal-spring shadow-2xl shadow-black/60 ${viewModal.match ? theme.outer : 'bg-[#131b2c]/70 backdrop-blur-2xl frost-border'}`} onClick={(e) => e.stopPropagation()}><div className="flex justify-between items-center mb-6">{viewModal.match ? (<span className="bg-gradient-to-br from-[#FDE68A] to-[#D4AF37] text-[#13151a] px-3 py-1 rounded-full text-[11px] font-black tracking-wider leading-none shadow-[0_1px_3px_rgba(0,0,0,0.4)] border border-[#FDE68A]/40">{viewModal.match.title}</span>) : (<span className="text-white font-black text-xl tracking-wide">{formatPopupDate(viewModal.dateKey)}</span>)}<button onClick={() => setViewModal({ isOpen: false, match: null, memo: null, dateKey: null })} className="text-slate-400 p-1.5 bg-white/5 rounded-full transition-colors"><X size={20}/></button></div>{viewModal.match && (<h3 className="text-2xl font-black tracking-tighter text-white mb-5">{viewModal.match.match}</h3>)}<div className={`w-full rounded-[1.25rem] ${viewModal.match ? theme.inner : 'bg-[#1e293b]/50 backdrop-blur-md shadow-inner'} flex flex-col p-5 text-[15px] font-bold text-white/90 leading-relaxed overflow-y-auto max-h-[30vh] border border-white/10`}>{viewModal.match && (<div className="flex flex-col gap-2.5 mb-4"><div className="flex items-center gap-3 text-[#D4AF37]"><Clock size={18} /> <span className="text-white">{viewModal.match.time}</span></div><div className="flex items-center gap-3 text-[#D4AF37]"><MapPin size={18} /> <span className="text-white">{viewModal.match.venue}</span></div></div>)}{viewModal.memo && (<div className={`flex gap-2 items-start ${viewModal.match ? 'pt-3 border-t border-white/10 mt-1' : ''}`}><FileText size={16} className="text-[#60a5fa] shrink-0 mt-0.5" /><div>{viewModal.memo}</div></div>)}</div></div></div>); })()}
+
+        {!isEditing && viewModal.isOpen && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6" onClick={()=>setViewModal({ isOpen: false, memo: null, dateKey: null })} style={{ WebkitTapHighlightColor: 'transparent' }}><div className={`w-full max-w-[320px] rounded-[2.5rem] p-6 animate-modal-spring shadow-2xl shadow-black/60 bg-[#131b2c]/70 backdrop-blur-2xl frost-border`} onClick={(e) => e.stopPropagation()}><div className="flex justify-between items-center mb-6"><span className="text-white font-black text-xl tracking-wide">{formatPopupDate(viewModal.dateKey)}</span><button onClick={() => setViewModal({ isOpen: false, memo: null, dateKey: null })} className="text-slate-400 p-1.5 bg-white/5 rounded-full transition-colors"><X size={20}/></button></div><div className={`w-full rounded-[1.25rem] bg-[#1e293b]/50 backdrop-blur-md shadow-inner flex flex-col p-5 text-[15px] font-bold text-white/90 leading-relaxed overflow-y-auto max-h-[30vh] border border-white/10`}>{viewModal.memo && (<div className={`flex gap-2 items-start`}><FileText size={16} className="text-[#60a5fa] shrink-0 mt-0.5" /><div>{viewModal.memo}</div></div>)}</div></div></div>
+        )}
       </div>
     </>
   );
