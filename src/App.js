@@ -48,7 +48,7 @@ const appId =
   typeof __app_id !== 'undefined' ? __app_id : 'daejeon-shift-pro-test-sandbox';
 const STORAGE_KEY = 'TEST_SANDBOX_USER_V308_04';
 
-// 공휴일 데이터 (절대 보존 원칙)
+// 공휴일 데이터
 const getHolidays = (y) => {
   const h = {};
   h[`${y}-1-1`] = '신정';
@@ -150,7 +150,6 @@ const formatHolidayText = (name) => {
   return [name];
 };
 
-// 꿈돌이 이미지
 const GGUMDORI_URL =
   'https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png';
 
@@ -158,13 +157,11 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 로딩 화면과 달력 화면의 배경색 + iOS/안드로이드 상태표시줄 강제 설정 로직
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
     document.body.style.transition = 'background-color 0.5s ease-in-out';
     
-    // 스마트폰 상단 상태표시줄 색상을 동적으로 변경하는 메타 태그
     let metaThemeColor = document.querySelector("meta[name=theme-color]");
     if (!metaThemeColor) {
       metaThemeColor = document.createElement("meta");
@@ -173,7 +170,6 @@ export default function App() {
     }
     metaThemeColor.setAttribute("content", bgColor);
 
-    // iOS 전용 투명 상태표시줄 허용 태그 (배경색이 스며들게 함)
     let metaAppleCapable = document.querySelector("meta[name=apple-mobile-web-app-capable]");
     if (!metaAppleCapable) {
       metaAppleCapable = document.createElement("meta");
@@ -186,7 +182,7 @@ export default function App() {
     if (!metaAppleStatus) {
       metaAppleStatus = document.createElement("meta");
       metaAppleStatus.name = "apple-mobile-web-app-status-bar-style";
-      metaAppleStatus.content = "black-translucent"; // 상태표시줄을 투명하게 덮어버림
+      metaAppleStatus.content = "black-translucent"; 
       document.head.appendChild(metaAppleStatus);
     }
   }, [showSplash]);
@@ -212,7 +208,6 @@ export default function App() {
   });
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
   const [isEditing, setIsEditing] = useState(false);
   const [familyKey, setFamilyKey] = useState('');
   const [editPass, setEditPass] = useState('');
@@ -247,7 +242,7 @@ export default function App() {
 
   const buttonRefs = useRef({});
   const prevIndRef = useRef({ left: 0, width: 0 });
-  const toolbarScrollRef = useRef(null); // 🚨 툴바 스크롤 제어용 Ref 추가
+  const toolbarScrollRef = useRef(null);
 
   const [indicatorStyle, setIndicatorStyle] = useState({
     left: 0,
@@ -774,12 +769,10 @@ export default function App() {
           )}
         </div>
         
-        {/* 🚨 2. 일정과 메모 공간 3단 분리 및 상단 밀착 구조 (유지됨) */}
         <div
           className="flex-1 w-full flex flex-col px-0.5 pb-[4px]"
           style={{ pointerEvents: 'none' }}
         >
-          {/* 첫 번째 단: 일정 */}
           <div className="w-full h-[18px] flex items-start justify-center overflow-hidden shrink-0">
             {s.type === 'schedule' && s.text && (
               <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-cyan-900/40 text-cyan-400 border-[0.5px] border-cyan-500/30 truncate">
@@ -793,10 +786,8 @@ export default function App() {
             )}
           </div>
           
-          {/* 두 번째 단: 여백 확보 (10px) */}
           <div className="w-full h-[10px] shrink-0"></div>
           
-          {/* 세 번째 단: 메모 (나머지 공간 모두 차지, 위쪽으로 바짝 밀착) */}
           <div className="w-full flex-1 flex items-start justify-center overflow-hidden min-h-[20px]">
             {s.memo && (
               <div className="w-[92%] mx-auto text-[8px] font-black py-[2px] rounded-full text-center bg-indigo-500/20 border-[0.5px] border-indigo-400/30 text-indigo-300 truncate shadow-sm">
@@ -872,26 +863,12 @@ export default function App() {
     <>
       <style>
         {`
-          /* 🚨 브라우저 전역 스와이프 제스처 차단 (뒤로가기 방지) */
           body, html { overscroll-behavior: none; margin: 0; padding: 0; }
-
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-          
-          /* 꿈돌이 플로팅 애니메이션 */
           @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
           .animate-floating { animation: floating 3.5s ease-in-out infinite; }
-
-          /* 은은한 샴페인 골드 텍스트 */
-          .subtle-gold-text { 
-            background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #9C7C38 100%); 
-            -webkit-background-clip: text; 
-            background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            color: transparent; 
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.5); 
-          }
-          
+          .subtle-gold-text { background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #9C7C38 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); }
           .ios-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none; }
           .frost-border { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
           .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -931,11 +908,9 @@ export default function App() {
                 className="relative w-full h-full object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]"
               />
             </div>
-
             <h1 className="text-3xl font-[900] uppercase tracking-widest subtle-gold-text mb-2 relative z-10">
               DJTC SHIFT
             </h1>
-
             <div className="relative z-10 flex justify-center text-[12px] font-black tracking-widest text-[#D4AF37]/70 drop-shadow-md animate-pulse">
               <span className="relative inline-block">
                 CONNECTING
@@ -944,7 +919,6 @@ export default function App() {
                 </span>
               </span>
             </div>
-
             <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">
               V2.02.02
             </p>
@@ -1115,7 +1089,6 @@ export default function App() {
                         updatedAt: new Date().toISOString(),
                       });
                     }
-                    // 비번 변경 시 자동 로그인 내역도 갱신
                     setEditPass(newPass);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify({ key: familyKey.trim(), pass: newPass }));
                     
@@ -1133,7 +1106,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* 달력 본문 영역 (잠금 기능 포함) */}
         <div
           className={`flex-1 px-4 flex flex-col overflow-hidden mt-4 relative ${
             isEditing ? 'pb-[68px]' : 'pb-4'
@@ -1185,7 +1157,6 @@ export default function App() {
             {renderDaysGrid()}
           </div>
           
-          {/* 비인증 상태일 때 표시되는 고급스러운 자물쇠 화면 */}
           {!isAuthenticated && (
              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0c10]/30 backdrop-blur-[2px]">
                <ShieldCheck size={50} className="text-white/40 mb-3 drop-shadow-md" />
@@ -1194,7 +1165,7 @@ export default function App() {
           )}
         </div>
 
-        {/* --- 툴바 영역 --- */}
+        {/* --- 툴바 영역 (🚨 안전 영역 추가되어 홈 바와 겹치지 않음) --- */}
         {isEditing && (
           <>
             {!viewModal.isOpen &&
@@ -1202,7 +1173,10 @@ export default function App() {
               !showShiftMenu &&
               !showNightMenu &&
               (scheduleHistory.length > 0 || redoHistory.length > 0) && (
-                <div className="fixed right-6 bottom-[88px] z-[9998] bg-[#1c1c1e]/40 backdrop-blur-md frost-border rounded-full flex items-center p-1 shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto">
+                <div 
+                  className="fixed right-6 z-[9998] bg-[#1c1c1e]/40 backdrop-blur-md frost-border rounded-full flex items-center p-1 shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto"
+                  style={{ bottom: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}
+                >
                   <button
                     onClick={handleUndo}
                     disabled={scheduleHistory.length === 0}
@@ -1234,7 +1208,10 @@ export default function App() {
               )}
 
             {(showShiftMenu || showNightMenu) && (
-              <div className="fixed bottom-[78px] w-[calc(100%-68px)] max-w-[432px] left-1/2 -translate-x-1/2 ml-[-34px] flex justify-center z-[10020] pointer-events-none">
+              <div 
+                className="fixed w-[calc(100%-68px)] max-w-[432px] left-1/2 -translate-x-1/2 ml-[-34px] flex justify-center z-[10020] pointer-events-none"
+                style={{ bottom: 'calc(78px + env(safe-area-inset-bottom, 0px))' }}
+              >
                 <div className="pointer-events-auto animate-modal-spring flex justify-center w-max">
                   {showShiftMenu && (
                     <div className="bg-[#1c1c1e]/95 backdrop-blur-3xl frost-border p-1.5 rounded-[1.8rem] flex gap-2 shadow-[0_15px_45px_rgba(0,0,0,0.8)] border border-white/15">
@@ -1284,18 +1261,17 @@ export default function App() {
               </div>
             )}
 
-            <div className="fixed bottom-2 left-1/2 -translate-x-1/2 w-full max-w-[500px] px-4 z-[9999] pointer-events-none">
+            <div 
+              className="fixed left-1/2 -translate-x-1/2 w-full max-w-[500px] px-4 z-[9999] pointer-events-none"
+              style={{ bottom: 'calc(8px + env(safe-area-inset-bottom, 0px))' }}
+            >
               <div className="w-full flex items-end gap-3 pointer-events-none relative">
                 <div className="flex-1 relative flex flex-col min-w-0 pointer-events-auto">
                   <div className="w-full h-[64px] bg-[#1a1c23]/70 backdrop-blur-xl frost-border rounded-[2.5rem] flex items-center relative overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
-                    {/* 🚨 2. 툴바 스와이프 제스처 완전 차단: onTouch 시리즈에 stopPropagation 적용 */}
                     <div
                       ref={toolbarScrollRef}
                       className="flex-1 flex items-center h-full overflow-x-auto no-scrollbar relative px-2 gap-3"
                       style={{ touchAction: 'pan-x', overscrollBehaviorX: 'none', WebkitOverscrollBehaviorX: 'none' }}
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchMove={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
                     >
                       <div
                         className="absolute top-1/2 z-0"
