@@ -157,7 +157,7 @@ export default function App() {
   const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🚨 1. 상단 색상 동기화
+  // 🚨 상단 색상 동기화
   useEffect(() => {
     const bgColor = showSplash ? '#1a050a' : '#0a0c10';
     document.body.style.backgroundColor = bgColor;
@@ -193,7 +193,9 @@ export default function App() {
   const [newPass, setNewPass] = useState(""); 
   const [showPwdChange, setShowPwdChange] = useState(false);
 
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1)); 
+  // 🚨 앱을 켤 때 항상 현재 기기의 시간을 기준으로 달력이 열리도록 수정됨
+  const [currentDate, setCurrentDate] = useState(new Date()); 
+  
   const [viewModal, setViewModal] = useState({ isOpen: false, memo: null, dateKey: null });
   const [modalState, setModalState] = useState({ isOpen: false, type: null, dateKey: null, data: {} });
   const [selectedDayKey, setSelectedDayKey] = useState(null);
@@ -472,13 +474,13 @@ export default function App() {
     return (
       <div key={`${monthType}-${d}`} onClick={() => {
           if (isEditing) {
-            // 🚨 3. SHIFT 모드일 때는 날짜를 눌러도 툴바가 닫히지 않음
+            // 🚨 SHIFT 모드일 때는 날짜를 눌러도 툴바가 닫히지 않음
             if (drawMode !== 'shift' && showShiftMenu) setShowShiftMenu(false);
             if (drawMode !== 'night' && showNightMenu) setShowNightMenu(false);
 
             if (!drawMode) return; 
             if (drawMode === 'shift') { 
-              // 🚨 3. 선택된 날짜 토글(해제) 기능
+              // 🚨 선택된 날짜 토글(해제) 기능
               setSelectedDayKey(prev => prev === key ? null : key); 
               return; 
             }
@@ -535,7 +537,7 @@ export default function App() {
     <>
       <style>
         {`
-          /* 🚨 2. 전역 스크롤 방지(overscroll-behavior: none) 제거 */
+          /* 🚨 전역 스크롤 방지 제거 완료 */
           body, html { margin: 0; padding: 0; background-color: #0a0c10; }
           @keyframes modalSpring { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
           .animate-modal-spring { animation: modalSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -552,7 +554,7 @@ export default function App() {
       {toast && (<div className="fixed top-12 left-1/2 -translate-x-1/2 z-[99999] animate-in slide-in-from-top-2 fade-in duration-200" style={{ pointerEvents: 'none' }}><div className="bg-[#1c1c1e]/70 backdrop-blur-xl frost-border px-4 py-2.5 rounded-full flex items-center justify-center min-w-[140px]"><span className="text-white text-[13px] font-black tracking-wide">{toast}</span></div></div>)}
       
       {showSplash && (
-        /* 🚨 1. 로딩 화면 그라데이션 수정 (위에서 아래로, 상단 15% 영역 동일 색상 유지) */
+        /* 🚨 로딩 화면 그라데이션 수정 (위에서 아래로, 상단 15% 영역 동일 색상 유지) */
         <div className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-opacity duration-500 ${(isAuthReady && isMinLoadingTimeDone) ? 'opacity-0' : 'opacity-100'}`} style={{ background: 'linear-gradient(to bottom, #1a050a 0%, #1a050a 15%, #4a161c 100%)', pointerEvents: 'none' }} >
           <div className="relative z-10 flex flex-col items-center w-full px-6">
             <div className="relative w-60 h-60 animate-floating -mb-10">
@@ -565,7 +567,7 @@ export default function App() {
                 CONNECTING<span className="absolute left-full top-0 w-[24px] text-left">{".".repeat(splashDotCount)}</span>
               </span>
             </div>
-            <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">V2.02.05</p>
+            <p className="absolute -bottom-24 text-[10px] font-bold text-white/40 tracking-widest uppercase relative z-10">V2.02.06</p>
           </div>
         </div>
       )}
@@ -573,7 +575,7 @@ export default function App() {
       <div className="max-w-[500px] mx-auto min-h-screen flex flex-col relative shadow-2xl font-sans overflow-hidden" style={{ backgroundColor: '#0a0c10' }}>
         <header className="pt-3 pb-3 px-5 rounded-b-[2rem] shadow-xl z-20 relative border-b border-[#D4AF37]/20" style={{ background: 'linear-gradient(145deg, #4a161c 0%, #1a050a 100%)' }}>
           <div className="flex justify-between items-center mb-3 mt-2">
-            <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#D4AF37]" /><span className="text-[10px] font-black tracking-widest uppercase text-white/80">DJTC SHIFT V2.02.05</span></div>
+            <div className="bg-white/5 backdrop-blur-md frost-border px-3 py-1.5 rounded-full flex items-center gap-1.5"><ShieldCheck size={12} className="text-[#D4AF37]" /><span className="text-[10px] font-black tracking-widest uppercase text-white/80">DJTC SHIFT V2.02.06</span></div>
             <button onClick={() => { if(isAuthenticated) setShowSettings(!showSettings); }} className="p-2 text-white/80 hover:bg-white/10 rounded-full transition-transform active:scale-[0.85] relative z-30" style={{ WebkitTapHighlightColor: 'transparent' }}><Settings size={20}/></button>
           </div>
           <div className="flex justify-between items-center mb-1 px-2 relative z-30">
@@ -613,7 +615,7 @@ export default function App() {
           <div className="flex justify-between items-center px-5 py-3 mx-1 mb-4 bg-white/5 backdrop-blur-md frost-border rounded-full relative z-10"><span className="text-[12px] font-black text-white/60 tracking-widest">{currentDate.getMonth()+1}월 근무</span><div className="flex gap-3"><div className="flex items-center gap-1"><Sun size={14} className="text-yellow-500"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.day}</span></div><div className="flex items-center gap-1"><Moon size={14} className="text-indigo-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.night}</span></div><div className="flex items-center gap-1 pl-1 border-l border-white/10"><Bell size={14} className="text-violet-400"/><span className="text-[13px] font-black text-white">{monthlyWorkCount.duty}</span></div></div></div>
           <div className="grid grid-cols-7 text-center py-2 text-[10px] font-black text-slate-500 mb-1 uppercase tracking-[0.2em] border-b border-white/5 relative z-10">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w,i)=><span key={w} className={i===0?'text-[#e55a5a]':i===6?'text-[#5a8be5]':''}>{w}</span>)}</div>
           
-          {/* 🚨 2. 달력 본문에 모바일 스크롤 가속 속성(WebkitOverflowScrolling) 추가 */}
+          {/* 🚨 달력 본문에 모바일 스크롤 가속 속성(WebkitOverflowScrolling) 유지 */}
           <div 
             className={`flex-1 overflow-y-auto no-scrollbar flex flex-col pt-1 relative z-10 transition-all duration-500 ${!isAuthenticated ? 'blur-[6px] opacity-30 pointer-events-none' : ''}`}
             style={{ paddingBottom: isEditing ? 'calc(95px + env(safe-area-inset-bottom, 12px))' : '20px', WebkitOverflowScrolling: 'touch' }}
@@ -707,7 +709,7 @@ export default function App() {
                     setDrawMode(null); 
                     setShowShiftMenu(false); 
                     setShowNightMenu(false); 
-                    // 🚨 3. 서버 저장 시 선택되어 있던 날짜도 깔끔하게 해제
+                    // 🚨 서버 저장 시 선택되어 있던 날짜도 깔끔하게 해제
                     setSelectedDayKey(null);
                     showToast("🟢 서버 저장 완료"); 
                   } 
