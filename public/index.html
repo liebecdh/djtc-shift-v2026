@@ -2,28 +2,18 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>DJTC SHIFT</title>
     
-    <!-- 🚨 핵심 1: viewport-fit=cover 추가 (하단 홈 바 충돌 방지용 안전 영역 확보) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-    
-    <!-- 🚨 핵심 2: 초기 로딩 시 상태표시줄 흰색 방지용 영구 테마 컬러 (자주색) -->
-    <meta name="theme-color" content="#1a050a" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
-    <title>DJTC SHIFT V2.02.02</title>
-    
-    <!-- Tailwind CSS (디자인 뼈대) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 앱 바탕화면 아이콘 -->
+    <!-- 🚨 직접 업로드한 로컬 아이콘 연결 (아이폰용) -->
     <link rel="apple-touch-icon" href="/icon.png" />
-    <link rel="icon" href="/icon.png" />
-    <link rel="manifest" href="/manifest.json" />
     
+    <!-- 🚨 안드로이드용 매니페스트 연결 고리 -->
+    <link rel="manifest" href="/manifest.json" />
   </head>
-  <!-- 🚨 핵심 3: HTML 렌더링 즉시 배경을 어둡게 칠해서 흰색 번쩍임 원천 차단 -->
-  <body style="background-color: #1a050a;">
+  <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
   </body>
