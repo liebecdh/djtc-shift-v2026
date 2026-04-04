@@ -3,12 +3,12 @@
   "name": "DJTC SHIFT",
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icon.png",
+      "src": "https://raw.githubusercontent.com/liebecdh/ggumdori/d3fae1262ef50794739cd6b9bf8c6862aea6512d/IMG_4504.png",
       "type": "image/png",
       "sizes": "512x512"
     }
